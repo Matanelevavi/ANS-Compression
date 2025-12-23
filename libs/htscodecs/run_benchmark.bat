@@ -5,28 +5,18 @@ setlocal enabledelayedexpansion
 :: שלב 1: בניית המנוע (Compilation)
 :: ==========================================
 echo.
-echo [1/2] Building Compressor Engine from subfolder...
+echo [1/2] Building HTSCodecs Engine...
 
-:: כניסה לתיקיית הקוד
-cd "htscodecs files"
-
-:: קומפילציה של קבצי ה-C
+:: קומפילציה של קבצי ה-C (הקבצים נמצאים בתיקייה הנוכחית)
 gcc -c -O3 rANS_static.c pack.c utils.c
 if %errorlevel% neq 0 goto error
 
 :: קומפילציה של ה-Main וחיבור הכל
-g++ -O3 -fpermissive main.cpp rANS_static.o pack.o utils.o -o compressor_static.exe
-if %errorlevel% neq 0 goto error
-
-:: העברת הקובץ המוכן לתיקייה הראשית (היכן שהסקריפט רץ)
-move /Y compressor_static.exe ..\ >nul
+g++ -O3 -fpermissive main.cpp rANS_static.o pack.o utils.o -o htscodecs_ans.exe
 if %errorlevel% neq 0 goto error
 
 :: מחיקת קבצי זבל (.o) שנשארו
 del *.o
-
-:: חזרה לתיקייה הראשית
-cd ..
 
 echo Build Success! Engine is ready.
 echo.
@@ -36,32 +26,35 @@ echo.
 :: ==========================================
 echo [2/2] Starting Benchmark...
 
-:: הגדרות
-set COMPRESSOR=compressor_static.exe
-set LOG_FILE=Compression_Results.csv
-set TEST_DIR=cantrbry
-set OUTPUT_EXTENSION=.rans
+:: הגדרות נתיבים מעודכנות
+set COMPRESSOR=htscodecs_ans.exe
+set LOG_FILE=../../results/HTSCodecs_Results.csv
+set TEST_DIR=../../corpus/cantrbry
+set OUTPUT_EXTENSION=.hts
+
+:: וודא שתיקיית התוצאות קיימת
+if not exist "../../results" mkdir "../../results"
 
 :: משתנים לסיכום
 set TOTAL_ORIG=0
 set TOTAL_COMP=0
 
-:: איפוס וכתיבת כותרות
+:: איפוס וכתיבת כותרות לקובץ ה-CSV
 if exist "%LOG_FILE%" del "%LOG_FILE%"
 echo Filename,Original_Size,Compressed_Size,Ratio_Percent,Savings_Percent > "%LOG_FILE%"
 
-:: לולאה ראשית
+:: לולאה ראשית על קבצי הקורפוס
 for %%f in ("%TEST_DIR%\*") do (
     set INPUT_FILE=%%f
-    set OUTPUT_FILE=!INPUT_FILE!%OUTPUT_EXTENSION%
     set FILENAME_ONLY=%%~nxf
+    set OUTPUT_FILE=!FILENAME_ONLY!%OUTPUT_EXTENSION%
     
-    :: קבלת גודל מקורי
+    :: קבלת גודל מקורי בעזרת PowerShell
     set ORIGINAL_SIZE=0
-    for /f "usebackq" %%s in (`powershell -Command "(Get-Item '!INPUT_FILE!').Length"`) do set ORIGINAL_SIZE=%%s
+    for /f "usebackq" %%s in (`powershell -Command "(Get-Item '%%f').Length"`) do set ORIGINAL_SIZE=%%s
     
-    :: ביצוע דחיסה
-    !COMPRESSOR! c "!INPUT_FILE!" "!OUTPUT_FILE!" > NUL
+    :: ביצוע דחיסה (מצב 'c' לפי ה-main.cpp)
+    !COMPRESSOR! c "%%f" "!OUTPUT_FILE!" > NUL
     
     if exist "!OUTPUT_FILE!" (
         :: קבלת גודל דחוס
@@ -76,20 +69,20 @@ for %%f in ("%TEST_DIR%\*") do (
             for /f "usebackq" %%r in (`powershell -Command "$r=([long]!COMPRESSED_SIZE!*100.0)/[long]!ORIGINAL_SIZE!; '{0:N2}' -f $r"`) do set RATIO=%%r
         )
 
-        :: סיכום כולל
+        :: סיכום כולל לסטטיסטיקה
         for /f "usebackq" %%t in (`powershell -Command "[long]!TOTAL_ORIG! + [long]!ORIGINAL_SIZE!"`) do set TOTAL_ORIG=%%t
         for /f "usebackq" %%t in (`powershell -Command "[long]!TOTAL_COMP! + [long]!COMPRESSED_SIZE!"`) do set TOTAL_COMP=%%t
         
-        :: כתיבה ללוג
+        :: כתיבה ללוג (קובץ ה-CSV)
         echo !FILENAME_ONLY!,!ORIGINAL_SIZE!,!COMPRESSED_SIZE!,!RATIO!,!SAVINGS! >> "%LOG_FILE%"
         echo Processed: !FILENAME_ONLY! (Saved: !SAVINGS!%%)
         
-        :: ניקוי
+        :: ניקוי הקובץ הדחוס הזמני
         del "!OUTPUT_FILE!"
     )
 )
 
-:: סיכום סופי
+:: סיכום סופי לשורה האחרונה באקסל
 set TOT_RATIO=0
 set TOT_SAVINGS=0
 if !TOTAL_ORIG! GTR 0 (
@@ -101,12 +94,12 @@ if !TOTAL_ORIG! GTR 0 (
 )
 
 echo.
-echo Done. Opening results...
-start "" %LOG_FILE%
+echo Done. Results saved in: %LOG_FILE%
+start "" "%LOG_FILE%"
 exit /b
 
 :error
 echo.
 echo !!! BUILD FAILED !!!
-echo Please check the source code in "htscodecs files".
+echo Please check the source code in "libs/htscodecs".
 pause
