@@ -33,8 +33,14 @@ def run_benchmark():
     results = []
     files = [f for f in os.listdir(CORPUS_DIR) if os.path.isfile(os.path.join(CORPUS_DIR, f))]
     
-    print(f"\n{'Filename':<15} | {'Orig (B)':<10} | {'Your ANS %':<12} | {'Ref Arith %':<12} | {'Gap %'}")
-    print("-" * 70)
+    # משתנים לסיכום כולל
+    total_orig = 0
+    total_ans = 0
+    total_ref = 0
+
+    # כותרת טבלה מעודכנת עם גדלים
+    print(f"\n{'Filename':<15} | {'Orig (B)':<10} | {'Rygrans(B)':<11} | {'Ref(B)':<10} | {'Your ANS %':<11} | {'Ref Arith %':<12} | {'Gap %'}")
+    print("-" * 95)
 
     for filename in files:
         filepath = os.path.join(CORPUS_DIR, filename)
@@ -51,19 +57,26 @@ def run_benchmark():
         subprocess.run([REF_COMPRESSOR, filepath, out_ref], 
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # בדיקת גדלים (אם הקובץ לא נוצר, נחשב כ-100%)
+        # בדיקת גדלים
         ans_size = os.path.getsize(out_ans) if os.path.exists(out_ans) else orig_size
         ref_size = os.path.getsize(out_ref) if os.path.exists(out_ref) else orig_size
         
+        # צבירה לסיכום
+        total_orig += orig_size
+        total_ans += ans_size
+        total_ref += ref_size
+
         ans_ratio = calculate_ratio(ans_size, orig_size)
         ref_ratio = calculate_ratio(ref_size, orig_size)
         gap = ans_ratio - ref_ratio
 
-        print(f"{filename:<15} | {orig_size:<10} | {ans_ratio:>10.2f}% | {ref_ratio:>11.2f}% | {gap:>+6.2f}%")
+        print(f"{filename:<15} | {orig_size:<10} | {ans_size:<11} | {ref_size:<10} | {ans_ratio:>10.2f}% | {ref_ratio:>11.2f}% | {gap:>+6.2f}%")
 
         results.append({
             'File Name': filename,
             'Original Size': orig_size,
+            'Rygrans Size': ans_size,       # הוספנו גודל
+            'Ref Arith Size': ref_size,     # הוספנו גודל
             'Your ANS Ratio (%)': round(ans_ratio, 2),
             'Ref Arith Ratio (%)': round(ref_ratio, 2),
             'Gap (%)': round(gap, 2)
@@ -72,6 +85,25 @@ def run_benchmark():
         # ניקוי קבצים זמניים
         if os.path.exists(out_ans): os.remove(out_ans)
         if os.path.exists(out_ref): os.remove(out_ref)
+
+    # --- חישוב שורת סיכום (TOTAL) ---
+    tot_ans_ratio = calculate_ratio(total_ans, total_orig)
+    tot_ref_ratio = calculate_ratio(total_ref, total_orig)
+    tot_gap = tot_ans_ratio - tot_ref_ratio
+
+    print("-" * 95)
+    print(f"{'TOTAL':<15} | {total_orig:<10} | {total_ans:<11} | {total_ref:<10} | {tot_ans_ratio:>10.2f}% | {tot_ref_ratio:>11.2f}% | {tot_gap:>+6.2f}%")
+
+    # הוספת שורת הסיכום ל-CSV
+    results.append({
+        'File Name': 'TOTAL',
+        'Original Size': total_orig,
+        'Rygrans Size': total_ans,
+        'Ref Arith Size': total_ref,
+        'Your ANS Ratio (%)': round(tot_ans_ratio, 2),
+        'Ref Arith Ratio (%)': round(tot_ref_ratio, 2),
+        'Gap (%)': round(tot_gap, 2)
+    })
 
     # שמירה ל-CSV
     df = pd.DataFrame(results)
