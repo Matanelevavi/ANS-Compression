@@ -5,11 +5,18 @@ import pandas as pd
 # --- ניהול נתיבים חכם ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# נתיבים מוחלטים יחסית למיקום הסקריפט
+# קבצי הרצה
 MY_COMPRESSOR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "libs", "rygrans", "compressor.exe"))
 REF_COMPRESSOR = os.path.join(BASE_DIR, "reference_arith_simple", "arith_simple.exe")
-CORPUS_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "corpus", "cantrbry"))
+
+# תיקיות קלט
+CORPUS_SMALL = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "corpus", "cantrbry"))
+CORPUS_LARGE = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "corpus", "50MFiles"))
+
+# קבצי פלט/קלט
 REPORT_FILE = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "results", "Final_Comparison_Report.csv"))
+HTS_REPORT = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "results", "HTSCodecs_Results.csv"))
+
 
 def calculate_ratio(compressed_size, original_size):
     """מחשב את אחוז הדחיסה - כמה אחוז הקובץ הדחוס מהמקור"""
@@ -17,99 +24,140 @@ def calculate_ratio(compressed_size, original_size):
         return 0
     return (compressed_size / original_size) * 100
 
-def run_benchmark():
-    print(f"DEBUG: Looking for compressor at: {MY_COMPRESSOR}")
-    
-    if not os.path.exists(MY_COMPRESSOR):
-        print(f"❌ Error: Your compressor is missing at {MY_COMPRESSOR}!")
-        return
-    if not os.path.exists(REF_COMPRESSOR):
-        print(f"❌ Error: Reference compressor is missing at {REF_COMPRESSOR}!")
-        return
-    if not os.path.exists(CORPUS_DIR):
-        print(f"❌ Error: Corpus directory not found at {CORPUS_DIR}!")
+
+def process_dataset(dataset_name, corpus_dir, results):
+    if not os.path.exists(corpus_dir):
+        print(f"Error: Corpus directory not found for {dataset_name}: {corpus_dir}")
         return
 
-    results = []
-    files = [f for f in os.listdir(CORPUS_DIR) if os.path.isfile(os.path.join(CORPUS_DIR, f))]
-    
-    # משתנים לסיכום כולל
-    total_orig = 0
-    total_ans = 0
-    total_ref = 0
+    files = [f for f in os.listdir(corpus_dir) if os.path.isfile(os.path.join(corpus_dir, f))]
 
-    # כותרת טבלה מעודכנת עם גדלים
-    print(f"\n{'Filename':<15} | {'Orig (B)':<10} | {'Rygrans(B)':<11} | {'Ref(B)':<10} | {'Your ANS %':<11} | {'Ref Arith %':<12} | {'Gap %'}")
-    print("-" * 95)
+    print(f"\n=== Dataset: {dataset_name} ===")
+    print(f"{'Filename':<20} | {'Orig (B)':<12} | {'Rygrans %':<10} | {'Arith %':<10}")
+    print("-" * 65)
 
     for filename in files:
-        filepath = os.path.join(CORPUS_DIR, filename)
+        filepath = os.path.join(corpus_dir, filename)
         out_ans = filename + ".my_ans"
         out_ref = filename + ".ref_arith"
-        
-        orig_size = os.path.getsize(filepath)
-        
-        # הרצת הדוחס שלך
-        subprocess.run([MY_COMPRESSOR, "c", filepath, out_ans], 
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # הרצת דוחס הרפרנס
-        subprocess.run([REF_COMPRESSOR, filepath, out_ref], 
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # בדיקת גדלים
+        orig_size = os.path.getsize(filepath)
+
+        # הרצת הדוחס שלכן
+        subprocess.run(
+            [MY_COMPRESSOR, "c", filepath, out_ans],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        # הרצת דוחס הרפרנס
+        subprocess.run(
+            [REF_COMPRESSOR, filepath, out_ref],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
         ans_size = os.path.getsize(out_ans) if os.path.exists(out_ans) else orig_size
         ref_size = os.path.getsize(out_ref) if os.path.exists(out_ref) else orig_size
-        
-        # צבירה לסיכום
-        total_orig += orig_size
-        total_ans += ans_size
-        total_ref += ref_size
 
         ans_ratio = calculate_ratio(ans_size, orig_size)
         ref_ratio = calculate_ratio(ref_size, orig_size)
-        gap = ans_ratio - ref_ratio
 
-        print(f"{filename:<15} | {orig_size:<10} | {ans_size:<11} | {ref_size:<10} | {ans_ratio:>10.2f}% | {ref_ratio:>11.2f}% | {gap:>+6.2f}%")
+        print(f"{filename:<20} | {orig_size:<12} | {ans_ratio:>8.2f}% | {ref_ratio:>8.2f}%")
 
         results.append({
+            'Dataset': dataset_name,
             'File Name': filename,
             'Original Size': orig_size,
-            'Rygrans Size': ans_size,       # הוספנו גודל
-            'Ref Arith Size': ref_size,     # הוספנו גודל
-            'Your ANS Ratio (%)': round(ans_ratio, 2),
-            'Ref Arith Ratio (%)': round(ref_ratio, 2),
-            'Gap (%)': round(gap, 2)
+            'Rygrans ANS Ratio (%)': round(ans_ratio, 2),
+            'Ref Arith Ratio (%)': round(ref_ratio, 2)
         })
 
-        # ניקוי קבצים זמניים
-        if os.path.exists(out_ans): os.remove(out_ans)
-        if os.path.exists(out_ref): os.remove(out_ref)
+        if os.path.exists(out_ans):
+            os.remove(out_ans)
+        if os.path.exists(out_ref):
+            os.remove(out_ref)
 
-    # --- חישוב שורת סיכום (TOTAL) ---
-    tot_ans_ratio = calculate_ratio(total_ans, total_orig)
-    tot_ref_ratio = calculate_ratio(total_ref, total_orig)
-    tot_gap = tot_ans_ratio - tot_ref_ratio
 
-    print("-" * 95)
-    print(f"{'TOTAL':<15} | {total_orig:<10} | {total_ans:<11} | {total_ref:<10} | {tot_ans_ratio:>10.2f}% | {tot_ref_ratio:>11.2f}% | {tot_gap:>+6.2f}%")
+def run_benchmark():
+    print(f"Using Rygrans compressor: {MY_COMPRESSOR}")
 
-    # הוספת שורת הסיכום ל-CSV
-    results.append({
-        'File Name': 'TOTAL',
-        'Original Size': total_orig,
-        'Rygrans Size': total_ans,
-        'Ref Arith Size': total_ref,
-        'Your ANS Ratio (%)': round(tot_ans_ratio, 2),
-        'Ref Arith Ratio (%)': round(tot_ref_ratio, 2),
-        'Gap (%)': round(tot_gap, 2)
+    if not os.path.exists(MY_COMPRESSOR):
+        print(f"Error: Missing Rygrans compressor at {MY_COMPRESSOR}")
+        return
+    if not os.path.exists(REF_COMPRESSOR):
+        print(f"Error: Missing Arithmetic reference compressor at {REF_COMPRESSOR}")
+        return
+    if not os.path.exists(HTS_REPORT):
+        print(f"Error: Missing HTS results file at {HTS_REPORT}")
+        return
+
+    results = []
+
+    # שלב 1: יצירת טבלת Rygrans + Arithmetic
+    process_dataset("cantrbry", CORPUS_SMALL, results)
+    process_dataset("50MFiles", CORPUS_LARGE, results)
+
+    df_main = pd.DataFrame(results)
+
+    # שלב 2: טעינת תוצאות HTS
+    df_hts = pd.read_csv(HTS_REPORT)
+    df_hts.columns = df_hts.columns.str.strip()
+
+    df_hts = df_hts.rename(columns={
+        'Dataset': 'Dataset',
+        'Filename': 'File Name',
+        'Ratio_Percent': 'HTSCodecs ANS Ratio (%)'
     })
 
-    # שמירה ל-CSV
-    df = pd.DataFrame(results)
+    # אם יש שורת TOTAL ב-HTS, נסיר
+    if 'Dataset' in df_hts.columns:
+        df_hts = df_hts[df_hts['Dataset'] != 'TOTAL']
+
+    needed_hts_cols = ['Dataset', 'File Name', 'HTSCodecs ANS Ratio (%)']
+    df_hts = df_hts[needed_hts_cols]
+
+    # שלב 3: מיזוג כל שלושת האלגוריתמים
+    merged_df = pd.merge(
+        df_main,
+        df_hts,
+        on=['Dataset', 'File Name'],
+        how='inner'
+    )
+
+    # שלב 4: חישוב פערים
+    merged_df['Gap Rygrans vs Arith (%)'] = (
+        merged_df['Rygrans ANS Ratio (%)'] - merged_df['Ref Arith Ratio (%)']
+    ).round(2)
+
+    merged_df['Gap Rygrans vs HTS (%)'] = (
+        merged_df['Rygrans ANS Ratio (%)'] - merged_df['HTSCodecs ANS Ratio (%)']
+    ).round(2)
+
+    merged_df['Gap HTS vs Arith (%)'] = (
+        merged_df['HTSCodecs ANS Ratio (%)'] - merged_df['Ref Arith Ratio (%)']
+    ).round(2)
+
+    # סדר עמודות סופי
+    final_cols = [
+        'Dataset',
+        'File Name',
+        'Original Size',
+        'Rygrans ANS Ratio (%)',
+        'HTSCodecs ANS Ratio (%)',
+        'Ref Arith Ratio (%)',
+        'Gap Rygrans vs Arith (%)',
+        'Gap Rygrans vs HTS (%)',
+        'Gap HTS vs Arith (%)'
+    ]
+
+    merged_df = merged_df[final_cols]
+
     os.makedirs(os.path.dirname(REPORT_FILE), exist_ok=True)
-    df.to_csv(REPORT_FILE, index=False)
-    print(f"\n✅ Done! Report saved to: {REPORT_FILE}")
+    merged_df.to_csv(REPORT_FILE, index=False)
+
+    print(f"\nDone! Final comparison report saved to: {REPORT_FILE}")
+
 
 if __name__ == "__main__":
     run_benchmark()

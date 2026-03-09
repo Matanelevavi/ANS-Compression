@@ -29,7 +29,8 @@ echo [2/2] Starting Benchmark...
 :: הגדרות נתיבים מעודכנות
 set COMPRESSOR=htscodecs_ans.exe
 set LOG_FILE=../../results/HTSCodecs_Results.csv
-set TEST_DIR=../../corpus/cantrbry
+set DATASET1=../../corpus/cantrbry
+set DATASET2=../../corpus/50MFiles
 set OUTPUT_EXTENSION=.hts
 
 :: וודא שתיקיית התוצאות קיימת
@@ -41,19 +42,48 @@ set TOTAL_COMP=0
 
 :: איפוס וכתיבת כותרות לקובץ ה-CSV
 if exist "%LOG_FILE%" del "%LOG_FILE%"
-echo Filename,Original_Size,Compressed_Size,Ratio_Percent,Savings_Percent > "%LOG_FILE%"
+echo Dataset,Filename,Original_Size,Compressed_Size,Ratio_Percent,Savings_Percent > "%LOG_FILE%"
+::הרצה על שתי התיקיות
+call :run_dataset "%DATASET1%" "cantrbry"
+call :run_dataset "%DATASET2%" "50MFiles"
 
-:: לולאה ראשית על קבצי הקורפוס
-for %%f in ("%TEST_DIR%\*") do (
+:: סיכום סופי לשורה האחרונה באקסל:: סיכום סופי לשורה האחרונה באקסל
+set TOT_RATIO=0
+set TOT_SAVINGS=0
+if !TOTAL_ORIG! GTR 0 (
+    for /f "usebackq" %%s in (`powershell -Command "$s=100.0 - ([long]!TOTAL_COMP!*100.0)/[long]!TOTAL_ORIG!; '{0:N2}' -f $s"`) do set TOT_SAVINGS=%%s
+    for /f "usebackq" %%r in (`powershell -Command "$r=([long]!TOTAL_COMP!*100.0)/[long]!TOTAL_ORIG!; '{0:N2}' -f $r"`) do set TOT_RATIO=%%r
+    
+    echo ------------------------------------------ >> "%LOG_FILE%"
+    echo TOTAL,ALL,!TOTAL_ORIG!,!TOTAL_COMP!,!TOT_RATIO!,!TOT_SAVINGS! >> "%LOG_FILE%"
+)
+echo.
+echo Done. Results saved in: %LOG_FILE%
+start "" "%LOG_FILE%"
+exit /b
+
+:: =====================================================
+:: [חדש] פונקציה שמריצה benchmark על תיקייה אחת
+:: שימוש:
+:: call :run_dataset "נתיב" "שם-דאטהסט"
+:: =====================================================
+:run_dataset
+set CUR_DIR=%~1
+set DATASET_NAME=%~2
+
+echo.
+echo Running dataset: !DATASET_NAME!
+
+for %%f in ("%CUR_DIR%\*") do (
     set INPUT_FILE=%%f
     set FILENAME_ONLY=%%~nxf
     set OUTPUT_FILE=!FILENAME_ONLY!%OUTPUT_EXTENSION%
     
-    :: קבלת גודל מקורי בעזרת PowerShell
+    :: קבלת גודל מקורי
     set ORIGINAL_SIZE=0
     for /f "usebackq" %%s in (`powershell -Command "(Get-Item '%%f').Length"`) do set ORIGINAL_SIZE=%%s
     
-    :: ביצוע דחיסה (מצב 'c' לפי ה-main.cpp)
+    :: דחיסה
     !COMPRESSOR! c "%%f" "!OUTPUT_FILE!" > NUL
     
     if exist "!OUTPUT_FILE!" (
@@ -69,33 +99,19 @@ for %%f in ("%TEST_DIR%\*") do (
             for /f "usebackq" %%r in (`powershell -Command "$r=([long]!COMPRESSED_SIZE!*100.0)/[long]!ORIGINAL_SIZE!; '{0:N2}' -f $r"`) do set RATIO=%%r
         )
 
-        :: סיכום כולל לסטטיסטיקה
+        :: צבירה לסיכום
         for /f "usebackq" %%t in (`powershell -Command "[long]!TOTAL_ORIG! + [long]!ORIGINAL_SIZE!"`) do set TOTAL_ORIG=%%t
         for /f "usebackq" %%t in (`powershell -Command "[long]!TOTAL_COMP! + [long]!COMPRESSED_SIZE!"`) do set TOTAL_COMP=%%t
         
-        :: כתיבה ללוג (קובץ ה-CSV)
-        echo !FILENAME_ONLY!,!ORIGINAL_SIZE!,!COMPRESSED_SIZE!,!RATIO!,!SAVINGS! >> "%LOG_FILE%"
-        echo Processed: !FILENAME_ONLY! (Saved: !SAVINGS!%%)
+        :: [שונה] כותבים גם את שם הדאטהסט
+        echo !DATASET_NAME!,!FILENAME_ONLY!,!ORIGINAL_SIZE!,!COMPRESSED_SIZE!,!RATIO!,!SAVINGS! >> "%LOG_FILE%"
+        echo Processed: !DATASET_NAME! - !FILENAME_ONLY! (Saved: !SAVINGS!%%)
         
-        :: ניקוי הקובץ הדחוס הזמני
+        :: מחיקת קובץ זמני
         del "!OUTPUT_FILE!"
     )
 )
 
-:: סיכום סופי לשורה האחרונה באקסל
-set TOT_RATIO=0
-set TOT_SAVINGS=0
-if !TOTAL_ORIG! GTR 0 (
-    for /f "usebackq" %%s in (`powershell -Command "$s=100.0 - ([long]!TOTAL_COMP!*100.0)/[long]!TOTAL_ORIG!; '{0:N2}' -f $s"`) do set TOT_SAVINGS=%%s
-    for /f "usebackq" %%r in (`powershell -Command "$r=([long]!TOTAL_COMP!*100.0)/[long]!TOTAL_ORIG!; '{0:N2}' -f $r"`) do set TOT_RATIO=%%r
-    
-    echo ------------------------------------------ >> "%LOG_FILE%"
-    echo TOTAL,!TOTAL_ORIG!,!TOTAL_COMP!,!TOT_RATIO!,!TOT_SAVINGS! >> "%LOG_FILE%"
-)
-
-echo.
-echo Done. Results saved in: %LOG_FILE%
-start "" "%LOG_FILE%"
 exit /b
 
 :error

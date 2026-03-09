@@ -8,7 +8,8 @@ set COMPRESSOR=compressor.exe
 :: שמירת התוצאות בתיקיית ה-results המרכזית
 set LOG_FILE=../../results/Rygrans_Results.csv
 :: הצבעה לתיקיית הקורפוס החדשה
-set TEST_DIR=../../corpus/cantrbry
+set DATASET1=../../corpus/cantrbry
+set DATASET2=../../corpus/50MFiles
 set OUTPUT_EXTENSION=.rans
 
 :: יצירת שם ייחודי לתיקיית ריצה
@@ -22,19 +23,38 @@ mkdir "!OUTPUT_DIR!"
 :: 2. איפוס וכתיבת כותרות לקובץ ה-Excel (CSV)
 :: ------------------------------------------
 if exist "%LOG_FILE%" del "%LOG_FILE%"
-echo Filename,Original_Size,Compressed_Size,Ratio_Percent,Savings_Percent > "%LOG_FILE%"
-
+echo Dataset,Filename,Original_Size,Compressed_Size,Ratio_Percent,Savings_Percent > "%LOG_FILE%"
 echo Starting Rygrans Benchmark...
-echo Input Folder: %TEST_DIR%
+echo Input Folders:
+echo   %DATASET1%
+echo   %DATASET2%
 echo.
 
 :: ------------------------------------------
-:: 3. לולאת הרצה על קבצי הקורפוס
+:: 3. הרצה על שתי תיקיות
 :: ------------------------------------------
-for %%f in ("%TEST_DIR%\*") do (
+call :run_dataset "%DATASET1%" "cantrbry"
+call :run_dataset "%DATASET2%" "50MFiles"
+
+echo.
+echo Benchmark Complete. Results saved in: %LOG_FILE%
+start "" %LOG_FILE%
+endlocal
+exit /b
+
+:: ------------------------------------------
+:: פונקציה להרצה על dataset אחד
+:: ------------------------------------------
+:run_dataset
+set CUR_DIR=%~1
+set DATASET_NAME=%~2
+
+echo.
+echo Running dataset: !DATASET_NAME!
+
+for %%f in ("%CUR_DIR%\*") do (
     set INPUT_FILE=%%f
     set FILENAME_ONLY=%%~nxf
-    
     set OUTPUT_FILE=!OUTPUT_DIR!\!FILENAME_ONLY!%OUTPUT_EXTENSION%
     
     :: קבלת גודל מקורי
@@ -58,12 +78,9 @@ for %%f in ("%TEST_DIR%\*") do (
         )
         
         :: כתיבה לקובץ ה-CSV
-        echo !FILENAME_ONLY!,!ORIGINAL_SIZE!,!COMPRESSED_SIZE!,!RATIO!,!SAVINGS! >> "%LOG_FILE%"
-        echo Processed: !FILENAME_ONLY!
+        echo !DATASET_NAME!,!FILENAME_ONLY!,!ORIGINAL_SIZE!,!COMPRESSED_SIZE!,!RATIO!,!SAVINGS! >> "%LOG_FILE%"
+        echo Processed: !DATASET_NAME! - !FILENAME_ONLY!
     )
 )
 
-echo.
-echo Benchmark Complete. Results saved in: %LOG_FILE%
-start "" %LOG_FILE%
-endlocal
+exit /b

@@ -1,0 +1,7 @@
+Dataset,File_Name,Rygrans_ANS,Ref_Arith,HTSCodecs_ANS
+50MFiles,dblp.xml.50MB,65.39,65.46,65.46
+50MFiles,dna.50MB,24.79,25.04,24.83
+50MFiles,english.50MB,56.7,57.8,57.03
+50MFiles,pitches.50MB,70.45,70.61,70.61
+50MFiles,proteins.50MB,52.45,52.47,52.46
+50MFiles,sources.50MB,69.36,70.39,69.85

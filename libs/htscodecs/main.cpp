@@ -2,7 +2,8 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
-#include <cstdlib> // עבור free
+#include <cstdint>
+#include <cstdlib> 
 
 // הגדרות כדי לעבוד עם קוד C
 extern "C" {
