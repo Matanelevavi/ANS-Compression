@@ -17,21 +17,27 @@ def save_graph(df, output_path, title):
         print(f"⚠️ Skipping graph '{output_path}' because dataframe is empty.")
         return
 
-    plt.figure(figsize=(12, 7))
-    plt.plot(df['File_Name'], df['Rygrans_ANS'], marker='o', label='Rygrans ANS (Yours)')
-    plt.plot(df['File_Name'], df['HTSCodecs_ANS'], marker='s', label='HTSCodecs ANS')
-    plt.plot(df['File_Name'], df['Ref_Arith'], marker='^', linestyle='--', label='Arithmetic Ref')
+    import numpy as np
 
-    plt.xticks(rotation=45, ha='right')
+    x = np.arange(len(df))   # מיקום לכל קובץ על ציר X
+    width = 0.25             # רוחב כל עמודה
+
+    plt.figure(figsize=(14, 7))
+
+    plt.bar(x - width, df['Rygrans_ANS'], width=width, label='Rygrans ANS (Yours)')
+    plt.bar(x, df['HTSCodecs_ANS'], width=width, label='HTSCodecs ANS')
+    plt.bar(x + width, df['Ref_Arith'], width=width, label='Arithmetic Ref')
+
+    plt.xticks(x, df['File_Name'], rotation=45, ha='right')
     plt.ylabel('Compression Ratio % (Lower is Better)')
     plt.title(title)
-    plt.grid(True, alpha=0.3)
+    plt.grid(axis='y', alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
 
-    print(f"📊 Graph successfully created: {output_path}")
+    print(f"📊 Bar graph successfully created: {output_path}")
 
 
 def generate_summary():
