@@ -24,12 +24,11 @@
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 #include <Windows.h>
 
 #define PRIu64 "llu"
 
-double timer()
+static inline double timer()
 {
     LARGE_INTEGER ctr, freq;
     QueryPerformanceCounter(&ctr);

@@ -6,7 +6,7 @@ import pandas as pd
 MY_COMPRESSOR = "compressor.exe"
 # נתיב לדוחס הפשוט יותר שקימפלנו הרגע
 REF_COMPRESSOR = os.path.join("reference_arith_simple", "arith_simple.exe")
-TEST_DIR = "cantrbry"
+TEST_DIR = "smallFiles"
 REPORT_FILE = "Fair_Comparison_Report.csv"
 
 def get_file_size(path):

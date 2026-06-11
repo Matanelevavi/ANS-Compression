@@ -1,18 +1,19 @@
-Dataset,File Name,Original Size,Rygrans ANS Ratio (%),HTSCodecs ANS Ratio (%),Ref Arith Ratio (%),Gap Rygrans vs Arith (%),Gap Rygrans vs HTS (%),Gap HTS vs Arith (%)
-cantrbry,alice29.txt,152089,57.78,57.23,57.33,0.45,0.55,-0.1
-cantrbry,asyoulik.txt,129301,61.53,60.86,60.88,0.65,0.67,-0.02
-cantrbry,cp.html,25248,69.93,66.43,66.28,3.65,3.5,0.15
-cantrbry,fields.c,11581,72.04,64.47,64.16,7.88,7.57,0.31
-cantrbry,grammar.lsp,3815,85.61,62.28,61.36,24.25,23.33,0.92
-cantrbry,kennedy.xls,1029744,44.77,44.73,46.42,-1.65,0.04,-1.69
-cantrbry,lcet10.txt,426754,58.61,58.43,58.52,0.09,0.18,-0.09
-cantrbry,plrabn12.txt,481861,56.87,56.75,56.94,-0.07,0.12,-0.19
-cantrbry,ptt5,513216,15.39,15.55,21.14,-5.75,-0.16,-5.59
-cantrbry,sum,38240,69.32,67.46,68.88,0.44,1.86,-1.42
-cantrbry,xargs.1,4339,85.6,65.29,64.28,21.32,20.31,1.01
-50MFiles,dblp.xml.50MB,52428800,65.39,65.46,65.46,-0.07,-0.07,0.0
-50MFiles,dna.50MB,52428800,24.79,24.83,25.04,-0.25,-0.04,-0.21
-50MFiles,english.50MB,52428800,56.7,57.03,57.8,-1.1,-0.33,-0.77
-50MFiles,pitches.50MB,52428800,70.45,70.61,70.61,-0.16,-0.16,0.0
-50MFiles,proteins.50MB,52428800,52.45,52.46,52.47,-0.02,-0.01,-0.01
-50MFiles,sources.50MB,52428800,69.36,69.85,70.39,-1.03,-0.49,-0.54
+Dataset,File Name,Original Size (B),Rygrans Size (B),Arithmetic Size (B),Rygrans Ratio (%),Arithmetic Ratio (%),Difference (%)
+smallFiles,alice29.txt,152089,87691,87191,57.66,57.33,0.33
+smallFiles,asyoulik.txt,129301,79256,78715,61.3,60.88,0.42
+smallFiles,cp.html,25248,17127,16735,67.84,66.28,1.55
+smallFiles,fields.c,11581,7791,7430,67.27,64.16,3.12
+smallFiles,grammar.lsp,3815,2627,2341,68.86,61.36,7.5
+smallFiles,kennedy.xls,1029744,462146,478043,44.88,46.42,-1.54
+smallFiles,lcet10.txt,426754,250695,249749,58.74,58.52,0.22
+smallFiles,plrabn12.txt,481861,274441,274359,56.95,56.94,0.02
+smallFiles,ptt5,513216,79442,108475,15.48,21.14,-5.66
+smallFiles,sum,38240,26415,26340,69.08,68.88,0.2
+smallFiles,test_dynamic.txt,200000,26556,25082,13.28,12.54,0.74
+smallFiles,xargs.1,4339,3077,2789,70.91,64.28,6.64
+50MFiles,dblp.xml.50MB,52428800,34291157,34317751,65.41,65.46,-0.05
+50MFiles,dna.50MB,52428800,13146284,13126264,25.07,25.04,0.04
+50MFiles,english.50MB,52428800,29700762,30303126,56.65,57.8,-1.15
+50MFiles,pitches.50MB,52428800,36698399,37021704,70.0,70.61,-0.62
+50MFiles,proteins.50MB,52428800,27517148,27511613,52.48,52.47,0.01
+50MFiles,sources.50MB,52428800,35439572,36902268,67.6,70.39,-2.79

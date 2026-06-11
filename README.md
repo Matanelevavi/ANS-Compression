@@ -26,7 +26,7 @@ The project is organized into modular components separating the core logic, refe
 | `libs/rygrans` | **Core Engine** | Custom C++ rANS implementation. Optimized for speed and memory efficiency. |
 | `libs/htscodecs` | **Reference** | Standard rANS implementation used for validation and benchmarking. |
 | `reference/arith` | **Baseline** | Arithmetic coding implementation providing a theoretical compression baseline. |
-| `corpus` | **Dataset** | The **Canterbury Corpus**, used as the standard dataset for lossless compression testing. |
+| `files` | **Dataset** | The **Canterbury files**, used as the standard dataset for lossless compression testing. |
 | `src` | **Analysis** | Python scripts for statistical aggregation (`final_summary.py`) and diagnostics. |
 | `results` | **Output** | Auto-generated CSV reports and visualization graphs. |
 

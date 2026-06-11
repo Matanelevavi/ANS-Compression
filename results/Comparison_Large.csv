@@ -1,7 +1,7 @@
-Dataset,File_Name,Rygrans_ANS,Ref_Arith,HTSCodecs_ANS
-50MFiles,dblp.xml.50MB,65.39,65.46,65.46
-50MFiles,dna.50MB,24.79,25.04,24.83
-50MFiles,english.50MB,56.7,57.8,57.03
-50MFiles,pitches.50MB,70.45,70.61,70.61
-50MFiles,proteins.50MB,52.45,52.47,52.46
-50MFiles,sources.50MB,69.36,70.39,69.85
+Dataset,File Name,Original Size (B),Rygrans Size (B),Arithmetic Size (B),Rygrans Ratio (%),Arithmetic Ratio (%),Difference (%)
+50MFiles,dblp.xml.50MB,52428800,34291157,34317751,65.41,65.46,-0.05
+50MFiles,dna.50MB,52428800,13146284,13126264,25.07,25.04,0.04
+50MFiles,english.50MB,52428800,29700762,30303126,56.65,57.8,-1.15
+50MFiles,pitches.50MB,52428800,36698399,37021704,70.0,70.61,-0.62
+50MFiles,proteins.50MB,52428800,27517148,27511613,52.48,52.47,0.01
+50MFiles,sources.50MB,52428800,35439572,36902268,67.6,70.39,-2.79

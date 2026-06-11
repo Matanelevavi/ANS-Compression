@@ -14,11 +14,11 @@ using namespace std;
 int main() {
     cout << "--- ANS Compression Benchmark Tool ---" << endl;
     
-    // רשימת קבצים לבדיקה מה-Corpus
+    // רשימת קבצים לבדיקה מה-files
     vector<string> test_files = {
-        "../corpus/cantrbry/alice29.txt",
-        "../corpus/cantrbry/asyoulik.txt",
-        "../corpus/cantrbry/lcet10.txt"
+        "../files/smallFiles/alice29.txt",
+        "../files/smallFiles/asyoulik.txt",
+        "../files/smallFiles/lcet10.txt"
     };
 
     for (const string& file_path : test_files) {
