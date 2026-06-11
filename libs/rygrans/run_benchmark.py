@@ -90,7 +90,25 @@ def run_simulation(dataset_path, dataset_name, writer):
             if os.path.exists(comp_path): os.remove(comp_path)
             if os.path.exists(restored_path): os.remove(restored_path)
 
+def build():
+    print("Building engine...")
+    sources = [
+        "main.cpp",
+        "EncryptionKey.cpp",
+        "AdaptiveModel.cpp",
+        "Compressor.cpp",
+        "Decompressor.cpp",
+    ]
+    sources = [os.path.join(SCRIPT_DIR, s) for s in sources]
+    cmd = ["g++", "-O3"] + sources + ["-o", EXE_PATH]
+    result = subprocess.run(cmd, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stderr.decode())
+        sys.exit(1)
+    print("Build Success!\n")
+
 def main():
+    build()   
     # Rebuilding output directory schema if missing
     os.makedirs(os.path.dirname(LOG_CSV), exist_ok=True)
 
