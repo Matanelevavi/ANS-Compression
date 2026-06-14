@@ -67,8 +67,6 @@ def save_graph(df, output_path, title):
 
 def generate_summary():
 
-    print("Generating summaries and graphs...")
-
     if not os.path.exists(REPORT_FILE):
         print("Error: Missing Final_Comparison_Report.csv")
         return
@@ -102,8 +100,6 @@ def generate_summary():
         OUTPUT_GRAPH_LARGE,
         "Compression Comparison - Large Files"
     )
-
-    print("\nSummary generation completed.")
 
 
 if __name__ == "__main__":

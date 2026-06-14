@@ -2,12 +2,15 @@ import os
 import subprocess
 import sys
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR   = SCRIPT_DIR
 
 RYGRANS_DIR = os.path.join(ROOT_DIR, "libs", "rygrans")
 
 BENCHMARK_SCRIPT = os.path.join(RYGRANS_DIR, "run_benchmark.py")
 
+TEST_ENCRYPTION_SCRIPT = os.path.join(RYGRANS_DIR, "test_encryption.py")
+GRAPHS_SCRIPT = os.path.join(RYGRANS_DIR, "generate_graphs.py") 
 
 COMPARE_SCRIPT = os.path.join(ROOT_DIR,"reference", "arith", "compare_algorithms.py")
 
@@ -32,8 +35,6 @@ def run_step(description, command, working_dir=ROOT_DIR, shell=False):
 
 
 def main():
-
-    print("ANS Compression Project Pipeline\n")
 
     required_files = [BENCHMARK_SCRIPT, COMPARE_SCRIPT, SUMMARY_SCRIPT]
 
@@ -63,10 +64,20 @@ def main():
         working_dir=ROOT_DIR
     )
 
+    # 4. Run Encryption Tests
+    run_step(
+        description="Run Encryption Tests",
+        command=[sys.executable, TEST_ENCRYPTION_SCRIPT],
+        working_dir=RYGRANS_DIR
+    )
 
+    # 5. Generate Encryption Graphs
+    run_step(
+        description="Generate Integrity Graphs",
+        command=[sys.executable, GRAPHS_SCRIPT],
+        working_dir=RYGRANS_DIR
+    )
     print("\nALL DONE")
-    print(f"Results saved in: {os.path.join(ROOT_DIR, 'results')}")
-
 
 if __name__ == "__main__":
     main()

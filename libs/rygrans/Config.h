@@ -9,4 +9,4 @@
 #define BLOCK_SIZE       (1024 * 1024)
 
 // How often to rebuild probability tables (every N symbols)
-#define REBUILD_INTERVAL 512
+extern uint32_t REBUILD_INTERVAL;

@@ -3,6 +3,7 @@ import subprocess
 import time
 import csv
 import platform
+import sys
 
 # --- Configuration Constants ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,7 +13,7 @@ EXE_NAME = "compressor.exe" if platform.system() == "Windows" else "compressor"
 EXE_PATH = os.path.join(SCRIPT_DIR, EXE_NAME)
 DATASET_PURE = os.path.join(SCRIPT_DIR, "..", "..", "files", "smallFiles")
 DATASET_ENC  = os.path.join(SCRIPT_DIR, "..", "..", "files", "50MFiles")
-LOG_CSV      = os.path.join(SCRIPT_DIR, "..", "..", "results", "ADAPRANS_Results.csv")
+LOG_CSV      = os.path.join(SCRIPT_DIR, "..", "..", "results", "Rygrans_Results.csv")
 
 def run_simulation(dataset_path, dataset_name, writer):
     """Iterates over a files dataset and benchmarks compression/decompression."""
@@ -71,7 +72,7 @@ def run_simulation(dataset_path, dataset_name, writer):
                     ratio = round((compressed_size / original_size) * 100, 2)
                     savings = round((1 - compressed_size / original_size) * 100, 2)
                 status = "SUCCESS"
-                print(f"  Processed: {filename}     OK ")
+                print(f"  Processed: {filename}     Decompression Is Match ")
             else:
                 savings, ratio, comp_time, decomp_time = 0.0, 0.0, 0.0, 0.0
                 status = "INTEGRITY ERROR"
@@ -91,7 +92,6 @@ def run_simulation(dataset_path, dataset_name, writer):
             if os.path.exists(restored_path): os.remove(restored_path)
 
 def build():
-    print("Building engine...")
     sources = [
         "main.cpp",
         "EncryptionKey.cpp",
@@ -105,8 +105,6 @@ def build():
     if result.returncode != 0:
         print(result.stderr.decode())
         sys.exit(1)
-    print("Build Success!\n")
-
 def main():
     build()   
     # Rebuilding output directory schema if missing
@@ -125,8 +123,6 @@ def main():
 
         print(f"\nStreaming 50MFiles files tests...")
         run_simulation(DATASET_ENC, "50MFiles", writer)
-
-    print("\nBenchmark Step Completed Successfully.")
 
 if __name__ == "__main__":
     main()

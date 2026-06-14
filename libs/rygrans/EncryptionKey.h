@@ -9,13 +9,16 @@
 struct EncryptionKey {
     std::vector<uint8_t> bits;
     size_t index;
+    uint32_t seed; 
 
     // Generate a deterministic random key from seed
-    void init_from_seed(uint32_t seed, size_t key_length = 1000);
-
-    // Manual initialization (for testing)
-    void init(const std::vector<uint8_t>& key_bits);
+    
+    void init_from_seed(uint32_t s, size_t key_length = 1000);
+    
+    void init_from_bits(const std::vector<uint8_t>& key_bits);
 
     // Returns the next bit (circular).
     bool get_next_bit();
+
+    bool empty() const { return bits.empty(); }
 };

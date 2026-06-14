@@ -14,7 +14,7 @@ using namespace std;
 #define PROB_BITS       14
 #define PROB_SCALE      (1 << PROB_BITS)
 #define BLOCK_SIZE      (1024 * 1024)
-#define REBUILD_INTERVAL 512   // כל כמה סימנים לשמור snapshot ולבנות טבלה מחדש
+#define REBUILD_INTERVAL 128   // כל כמה סימנים לשמור snapshot ולבנות טבלה מחדש
 
 // --- Key Management ---
 struct EncryptionKey {
@@ -155,19 +155,15 @@ vector<uint8_t> compress_block(const uint8_t* data, size_t N,
             model.update(data[i]);
     }
 
-    // מעבר 2: קידוד הפוך
-    // לכל interval: שחזר snapshot, הרץ קדימה עד הסימן המדויק, בנה טבלה פעם אחת
+
     RansState rans;
     RansEncInit(&rans);
     vector<uint8_t> out_buf(N * 2 + 1024);
     uint8_t* ptr = out_buf.data() + out_buf.size();
 
-    // טבלאות מוכנות לכל ה-intervals — נבנות פעם אחת כל REBUILD_INTERVAL סימנים
-    // במקום N פעמים — N/512 פעמים בלבד
     vector<vector<RansEncSymbol>> interval_tables(num_intervals,
                                                   vector<RansEncSymbol>(256));
 
-    // בנה את טבלאות כל ה-intervals מראש (מעבר קצר קדימה)
     for (size_t idx = 0; idx < num_intervals; idx++) {
         AdaptiveModel m;
         memcpy(m.freqs, snaps[idx].freqs, sizeof(m.freqs));
@@ -175,7 +171,6 @@ vector<uint8_t> compress_block(const uint8_t* data, size_t N,
         m.buildEncTable(interval_tables[idx].data());
     }
 
-    // קידוד: כל סימן משתמש בטבלה של ה-interval שלו
     for (size_t i = N; i > 0; i--) {
         size_t pos      = i - 1;
         size_t interval = pos / REBUILD_INTERVAL;
@@ -260,7 +255,7 @@ void decompress(const string& input_path, const string& output_path,
         RansDecSymbol dsyms[256];
         uint8_t slot_to_sym[PROB_SCALE];
 
-        // בנה טבלה ראשונה
+
         model.buildDecTable(dsyms, slot_to_sym);
         uint32_t next_rebuild = REBUILD_INTERVAL;
 
@@ -309,7 +304,7 @@ int main(int argc, char** argv) {
     if (argc >= 5) seed       = (uint32_t)stoul(argv[4]);
     if (argc >= 6) dummy_mode = (stoi(argv[5]) == 1);
 
-    vector<uint8_t> dummy_bits; // לא בשימוש יותר
+    vector<uint8_t> dummy_bits;
     
     if (mode == "c")
         compress(input, output, seed, dummy_mode);

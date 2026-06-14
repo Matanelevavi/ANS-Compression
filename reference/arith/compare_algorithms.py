@@ -131,9 +131,6 @@ def process_dataset(dataset_name, files_dir, results):
 
 
 def run_benchmark():
-
-    print(f"Using Rygrans compressor: {MY_COMPRESSOR}")
-
     if not os.path.exists(MY_COMPRESSOR):
         print(f"Error: Missing Rygrans compressor")
         return
@@ -152,10 +149,6 @@ def run_benchmark():
     os.makedirs(os.path.dirname(REPORT_FILE), exist_ok=True)
 
     df.to_csv(REPORT_FILE, index=False)
-
-    print(f"\nFinal report saved to:")
-    print(REPORT_FILE)
-
 
 if __name__ == "__main__":
     run_benchmark()

@@ -3,7 +3,8 @@
 using namespace std;
 
 
-void EncryptionKey::init_from_seed(uint32_t seed, size_t key_length) {
+void EncryptionKey::init_from_seed(uint32_t s, size_t key_length) {
+    seed = s;
     mt19937 rng(seed);
     uniform_int_distribution<int> dist(0, 1);
     bits.resize(key_length);
@@ -12,12 +13,15 @@ void EncryptionKey::init_from_seed(uint32_t seed, size_t key_length) {
     index = 0;
 }
 
-void EncryptionKey::init(const vector<uint8_t>& key_bits) {
+
+void EncryptionKey::init_from_bits(const std::vector<uint8_t>& key_bits) {
+    seed = 0;
     bits  = key_bits;
     index = 0;
 }
 
 bool EncryptionKey::get_next_bit() {
+    if (bits.empty()) return true;   // no key → always update model
     bool bit = (bits[index] != 0);
     index = (index + 1) % bits.size();
     return bit;

@@ -4,7 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
-#include <random>
+
 #include "platform.h"
 #include "rans_byte.h"
 #include "Config.h"
@@ -13,26 +13,14 @@
 #include "EncryptionKey.h"
 
 using namespace std;
+extern uint32_t REBUILD_INTERVAL;
 
-// -----------------------------------------------------------------------
-// compress_block
-// Two-pass adaptive block encoder:
-//
-//   Pass 1 (forward):  build a ModelSnapshot at the start of every interval.
-//                      The snapshot captures the model state before any symbol
-//                      in that interval is seen, so the decoder can replicate it.
-//
-//   Pass 2 (backward): rANS encodes symbols in reverse order.
-//                      Each symbol uses the encoder table of its interval
-//                      (built once per interval, not once per symbol).
-// -----------------------------------------------------------------------
 static vector<uint8_t> compress_block(const uint8_t* data, size_t N,
                                        EncryptionKey& enc_key) {
     enc_key.index = 0;
 
     size_t num_intervals = (N + REBUILD_INTERVAL - 1) / REBUILD_INTERVAL;
 
-    // --- Pass 1: snapshot at the start of every interval ---
     vector<ModelSnapshot> snaps(num_intervals);
     AdaptiveModel model;
     model.init();
@@ -48,8 +36,6 @@ static vector<uint8_t> compress_block(const uint8_t* data, size_t N,
             model.update(data[i]);
     }
 
-    // --- Build one encoder table per interval ---
-    // N/REBUILD_INTERVAL builds instead of N — the core performance saving
     vector<vector<RansEncSymbol>> tables(num_intervals,
                                          vector<RansEncSymbol>(256));
     for (size_t idx = 0; idx < num_intervals; idx++) {
@@ -59,7 +45,6 @@ static vector<uint8_t> compress_block(const uint8_t* data, size_t N,
         m.buildEncTable(tables[idx].data());
     }
 
-    // --- Pass 2: reverse rANS encoding ---
     RansState rans;
     RansEncInit(&rans);
     vector<uint8_t> out_buf(N * 2 + 1024);
@@ -77,38 +62,32 @@ static vector<uint8_t> compress_block(const uint8_t* data, size_t N,
     return vector<uint8_t>(ptr, ptr + comp_size);
 }
 
-// -----------------------------------------------------------------------
-// compress
-// Streams the file in BLOCK_SIZE chunks and compresses each block.
 // File format:
+//   [uint32] seed          (0 if key was provided directly via --key)
 //   [uint32] total_original_size
 //   for each block:
 //     [uint32] original_block_size
 //     [uint32] compressed_block_size
 //     [bytes]  compressed_block_data
-// -----------------------------------------------------------------------
-void compress(const string& input_path, const string& output_path) {
+void compress(const string& input_path, const string& output_path,
+              EncryptionKey& enc_key) {
     ifstream in(input_path, ios::binary);
     if (!in) { cerr << "Error opening input file\n"; return; }
 
     ofstream out(output_path, ios::binary);
     if (!out) { cerr << "Error creating output file\n"; return; }
 
-   std::random_device rd;
-    uint32_t seed = rd(); 
-
     in.seekg(0, ios::end);
     uint32_t total_orig = (uint32_t)in.tellg();
     in.seekg(0, ios::beg);
 
-    out.write((char*)&seed, sizeof(seed));    
-    out.write((char*)&total_orig, sizeof(total_orig));
-
-    EncryptionKey enc_key;
-    enc_key.init_from_seed(seed);
+    // Write seed (0 means key was injected directly — decompressor must
+    // also receive the key directly in that case)
+    out.write((char*)&enc_key.seed, sizeof(enc_key.seed));
+    out.write((char*)&total_orig,   sizeof(total_orig));
 
     vector<uint8_t> buffer(BLOCK_SIZE);
-    size_t total_comp = sizeof(total_orig);
+    size_t total_comp = sizeof(enc_key.seed) + sizeof(total_orig);
 
     while (in) {
         in.read((char*)buffer.data(), BLOCK_SIZE);
@@ -116,14 +95,12 @@ void compress(const string& input_path, const string& output_path) {
         if (bytes_read == 0) break;
 
         vector<uint8_t> comp = compress_block(buffer.data(), bytes_read, enc_key);
-       
+
         uint32_t ob = (uint32_t)bytes_read;
         uint32_t cb = (uint32_t)comp.size();
-        
         out.write((char*)&ob, sizeof(ob));
         out.write((char*)&cb, sizeof(cb));
         out.write((char*)comp.data(), comp.size());
-       
         total_comp += sizeof(ob) + sizeof(cb) + comp.size();
     }
 

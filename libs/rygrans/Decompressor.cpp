@@ -12,29 +12,29 @@
 
 using namespace std;
 
-// -----------------------------------------------------------------------
-// decompress
-// Mirrors the encoder exactly:
-//   - Same model initialization (Laplace smoothing)
-//   - Same key seed and traversal order
-//   - Decoder table rebuilt at the same interval boundaries as the encoder
-//   - Model updated after each symbol with the same key-bit condition
-// -----------------------------------------------------------------------
-void decompress(const string& input_path, const string& output_path) {
+void decompress(const string& input_path, const string& output_path,
+                EncryptionKey& enc_key) {
     ifstream in(input_path, ios::binary);
     if (!in) { cerr << "Error opening compressed file\n"; return; }
 
     ofstream out(output_path, ios::binary);
     if (!out) { cerr << "Error creating decompressed file\n"; return; }
 
-    uint32_t seed;
-    if (!in.read((char*)&seed, sizeof(seed))) return;
-  
+    // Read seed from file header
+    uint32_t file_seed;
+    if (!in.read((char*)&file_seed, sizeof(file_seed))) return;
+
     uint32_t total_orig;
     if (!in.read((char*)&total_orig, sizeof(total_orig))) return;
 
-    EncryptionKey enc_key;
-    enc_key.init_from_seed(seed);
+    // Key priority:
+    //   1. enc_key injected from outside (--seed or --key) → use as-is
+    //   2. enc_key empty + file has seed                   → rebuild from file seed
+    //   3. enc_key empty + file seed is 0                  → no key (all bits = 1)
+    if (enc_key.empty()) {
+            if (file_seed != 0)
+                enc_key.init_from_seed(file_seed);
+        }
 
     while (in.peek() != EOF) {
         uint32_t orig_b, comp_b;
@@ -50,15 +50,13 @@ void decompress(const string& input_path, const string& output_path) {
         RansState rans;
         RansDecInit(&rans, &ptr);
 
-        // Must match encoder initialization exactly
         AdaptiveModel model;
         model.init();
-        enc_key.index = 0;
+        enc_key.index = 0;   // reset key position for each block
 
         RansDecSymbol dsyms[256];
         uint8_t slot_to_sym[PROB_SCALE];
 
-        // Build initial table before first symbol
         model.buildDecTable(dsyms, slot_to_sym);
         uint32_t next_rebuild = REBUILD_INTERVAL;
 
@@ -66,7 +64,6 @@ void decompress(const string& input_path, const string& output_path) {
         output.reserve(orig_b);
 
         for (uint32_t i = 0; i < orig_b; i++) {
-            // Rebuild at the same interval boundaries as the encoder
             if (i == next_rebuild) {
                 model.buildDecTable(dsyms, slot_to_sym);
                 next_rebuild += REBUILD_INTERVAL;
@@ -78,7 +75,6 @@ void decompress(const string& input_path, const string& output_path) {
 
             RansDecAdvanceSymbol(&rans, &ptr, &dsyms[sym], PROB_BITS);
 
-            // Must match encoder update condition exactly
             if (enc_key.get_next_bit())
                 model.update(sym);
         }
