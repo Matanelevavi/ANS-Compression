@@ -1,83 +1,65 @@
+"""
+run_full.py - master pipeline: build, benchmark, compare, test, plot.
+
+Runs all project steps in order:
+
+  1. run_benchmark.py       build the compressor + benchmark it
+  2. compare_algorithms.py  compare against the arithmetic baseline
+  3. final_summary.py       comparison CSVs and graphs
+  4. test_encryption.py     the five encryption scenarios
+  5. generate_graphs.py     encryption test graphs
+  6. paper_experiments.py   experiments from the paper (Section 4)
+
+Any failing step stops the pipeline with a non-zero exit code.
+"""
+
 import os
 import subprocess
 import sys
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR   = SCRIPT_DIR
-
+ROOT_DIR    = os.path.dirname(os.path.abspath(__file__))
 RYGRANS_DIR = os.path.join(ROOT_DIR, "libs", "rygrans")
 
-BENCHMARK_SCRIPT = os.path.join(RYGRANS_DIR, "run_benchmark.py")
+STEPS = [
+    ("Rygrans benchmark",
+     os.path.join(RYGRANS_DIR, "run_benchmark.py"), RYGRANS_DIR),
+    ("Comparison vs arithmetic coding",
+     os.path.join(ROOT_DIR, "reference", "arith", "compare_algorithms.py"), ROOT_DIR),
+    ("Summary graphs",
+     os.path.join(ROOT_DIR, "src", "final_summary.py"), ROOT_DIR),
+    ("Encryption tests",
+     os.path.join(RYGRANS_DIR, "test_encryption.py"), RYGRANS_DIR),
+    ("Encryption graphs",
+     os.path.join(RYGRANS_DIR, "generate_graphs.py"), RYGRANS_DIR),
+    ("Paper experiments",
+     os.path.join(RYGRANS_DIR, "paper_experiments.py"), RYGRANS_DIR),
+]
 
-TEST_ENCRYPTION_SCRIPT = os.path.join(RYGRANS_DIR, "test_encryption.py")
-GRAPHS_SCRIPT = os.path.join(RYGRANS_DIR, "generate_graphs.py") 
 
-COMPARE_SCRIPT = os.path.join(ROOT_DIR,"reference", "arith", "compare_algorithms.py")
-
-SUMMARY_SCRIPT = os.path.join(ROOT_DIR, "src", "final_summary.py")
-
-
-def run_step(description, command, working_dir=ROOT_DIR, shell=False):
-
-    print("\n" + "=" * 60)
-    print(f"Starting Step: {description}")
-    print("=" * 60)
-
+def run_step(description, script, working_dir):
+    print("\n" + "=" * 60, flush=True)
+    print(f"Step: {description}", flush=True)
+    print("=" * 60, flush=True)
     try:
-        subprocess.run(command, cwd=working_dir, shell=shell,  check=True  )
-
-        print(f"\nStep '{description}' completed successfully.")
-
+        subprocess.run([sys.executable, script], cwd=working_dir, check=True)
+        print(f"Step '{description}' completed.")
     except subprocess.CalledProcessError:
-
-        print(f"\nError: Step '{description}' failed!")
+        print(f"Error: step '{description}' failed!")
         sys.exit(1)
 
 
 def main():
+    missing = [s for _, s, _ in STEPS if not os.path.exists(s)]
+    if missing:
+        for m in missing:
+            print(f"Missing script: {m}")
+        sys.exit(1)
 
-    required_files = [BENCHMARK_SCRIPT, COMPARE_SCRIPT, SUMMARY_SCRIPT]
+    for description, script, working_dir in STEPS:
+        run_step(description, script, working_dir)
 
-    for file in required_files:
-        if not os.path.exists(file):
-            print(f"Missing file: {file}")
-            sys.exit(1)
-    
-    # 1. Run Rygrans Benchmark
-    run_step(
-        description="Run Rygrans Benchmark",
-        command=[sys.executable, BENCHMARK_SCRIPT],
-        working_dir=RYGRANS_DIR
-    )
-
-    # 2. Generate Comparison CSV
-    run_step(
-        description="Generate Final Comparison Report",
-        command=[sys.executable, COMPARE_SCRIPT],
-        working_dir=ROOT_DIR
-    )
-
-    # 3. Generate Summary Graphs
-    run_step(
-        description="Generate Summary Graphs",
-        command=[sys.executable, SUMMARY_SCRIPT],
-        working_dir=ROOT_DIR
-    )
-
-    # 4. Run Encryption Tests
-    run_step(
-        description="Run Encryption Tests",
-        command=[sys.executable, TEST_ENCRYPTION_SCRIPT],
-        working_dir=RYGRANS_DIR
-    )
-
-    # 5. Generate Encryption Graphs
-    run_step(
-        description="Generate Integrity Graphs",
-        command=[sys.executable, GRAPHS_SCRIPT],
-        working_dir=RYGRANS_DIR
-    )
     print("\nALL DONE")
+
 
 if __name__ == "__main__":
     main()

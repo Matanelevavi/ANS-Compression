@@ -1,13 +1,13 @@
-Dataset,File Name,Original Size (B),Rygrans Size (B),Arithmetic Size (B),Rygrans Ratio (%),Arithmetic Ratio (%),Difference (%)
-smallFiles,alice29.txt,152089,87691,87191,57.66,57.33,0.33
-smallFiles,asyoulik.txt,129301,79256,78715,61.3,60.88,0.42
-smallFiles,cp.html,25248,17127,16735,67.84,66.28,1.55
-smallFiles,fields.c,11581,7791,7430,67.27,64.16,3.12
-smallFiles,grammar.lsp,3815,2627,2341,68.86,61.36,7.5
-smallFiles,kennedy.xls,1029744,462146,478043,44.88,46.42,-1.54
-smallFiles,lcet10.txt,426754,250695,249749,58.74,58.52,0.22
-smallFiles,plrabn12.txt,481861,274441,274359,56.95,56.94,0.02
-smallFiles,ptt5,513216,79442,108475,15.48,21.14,-5.66
-smallFiles,sum,38240,26415,26340,69.08,68.88,0.2
-smallFiles,test_dynamic.txt,200000,26556,25082,13.28,12.54,0.74
-smallFiles,xargs.1,4339,3077,2789,70.91,64.28,6.64
+Dataset,File Name,Original Size (B),Rygrans Size (B),Arithmetic Size (B),Rygrans Ratio (%),Arithmetic Ratio (%),Difference (%),Status
+smallFiles,alice29.txt,152089,87454,87191,57.5,57.33,0.17,OK
+smallFiles,asyoulik.txt,129301,79122,78715,61.19,60.88,0.31,OK
+smallFiles,cp.html,25248,16991,16735,67.3,66.28,1.01,OK
+smallFiles,fields.c,11581,7672,7430,66.25,64.16,2.09,OK
+smallFiles,grammar.lsp,3815,2507,2341,65.71,61.36,4.35,OK
+smallFiles,kennedy.xls,1029744,462749,478043,44.94,46.42,-1.49,OK
+smallFiles,lcet10.txt,426754,250455,249749,58.69,58.52,0.17,OK
+smallFiles,plrabn12.txt,481861,274216,274359,56.91,56.94,-0.03,OK
+smallFiles,ptt5,513216,80468,108475,15.68,21.14,-5.46,OK
+smallFiles,sum,38240,26538,26340,69.4,68.88,0.52,OK
+smallFiles,test_dynamic.txt,200000,27169,25082,13.58,12.54,1.04,OK
+smallFiles,xargs.1,4339,2940,2789,67.76,64.28,3.48,OK

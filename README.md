@@ -1,42 +1,77 @@
-# Adaptive rANS with Integrated Encryption Key
+# Integrated Encryption in Adaptive rANS Compression
 ### Department of Computer Science — Ariel University
 
----
+An **adaptive, block-based rANS (range Asymmetric Numeral Systems) entropy
+coder** with an integrated encryption mechanism. It applies the scheme of
+Klein & Shapira, *"Integrated Encryption in Dynamic Arithmetic Compression"*,
+to rANS instead of arithmetic coding.
 
-## Overview
-
-This project implements an **adaptive, block-based rANS (Range Asymmetric Numeral Systems) entropy coder** with an integrated encryption mechanism. The core idea, derived from the paper *"Integrated Encryption in Dynamic Arithmetic Compression"*, is to condition model updates on a binary encryption key: at each symbol, the adaptive model updates only if the corresponding key bit is `1`. Without the key, decompression produces completely different output.
-
-The project benchmarks this custom engine against two reference implementations — **HTSCodecs** (industry-standard rANS) and a classic **Arithmetic Coding** baseline — and validates the encryption behavior through a dedicated test suite.
+The core idea: the adaptive model is updated **selectively**, gated by a secret
+binary key. At each symbol the model changes only where the key bit is `1`.
+Without the correct key, the decoder's model diverges and the output becomes
+noise.
 
 ---
 
 ## How It Works
 
-### Compression (Two-Pass)
+### The key-gated model (paper, Section 2)
 
-**Pass 1 (forward):** The encoder scans the input and builds an adaptive probability model symbol by symbol. At each symbol, it queries the encryption key:
-- Key bit = `1` → model updates (learns the symbol's frequency)
-- Key bit = `0` → model does not update (encryption step)
+Compression uses an order-0 adaptive frequency model over 256 byte values.
+For each processed symbol `i`, two independent actions are gated by the key:
 
-A snapshot of the model state is saved every `REBUILD_INTERVAL = 512` symbols.
+- **Update** — if the next key bit is `1`, increment the symbol's frequency.
+- **Swap** — if swaps are enabled and the following key bit is `1`, swap the
+  symbol with its neighbor in the interval order (paper, Section 3.4). This
+  hides the partition layout, not just the frequencies.
 
-**Pass 2 (backward):** rANS encodes symbols in reverse order (required by the algorithm). Each symbol is encoded using the probability table built from its interval's snapshot.
+The key is generated from a seed (Mersenne Twister) or supplied directly as a
+bit string, and is read circularly.
 
-### Decompression (One Pass)
+### Priming (paper, Section 3.2)
 
-The decoder replicates the encoder's model evolution exactly — same initialization, same key, same update condition at every symbol. Any deviation in the key causes the model to diverge immediately, producing garbled output.
+Before the real data, the model is warmed up on a fixed, publicly known text
+(the opening of *Moby-Dick*). The priming updates are themselves gated by the
+secret key, so the model state when the real data begins is already secret.
+This closes an attack on the known initial model: without priming, the first
+rebuild interval of every block decodes correctly under *any* key. The
+`generate_graphs.py` output visualizes this leak (priming on vs. off).
 
-### File Format
+### Two-pass compression
+
+- **Pass 1 (forward)** builds the adaptive model symbol by symbol and saves a
+  snapshot every `interval` symbols.
+- **Pass 2 (backward)** rANS encodes symbols in reverse (required by rANS),
+  rebuilding one interval's table at a time from the snapshots.
+
+The model and key stream run **continuously across blocks**, so a 50 MB file
+behaves like one long stream rather than independent 1 MB chunks.
+
+### Decompression (one pass)
+
+The decoder replays the exact same model evolution — same init, same priming,
+same key-bit consumption at every step. Any deviation in the key diverges the
+model and destroys the output.
+
+### File format (version 2)
 
 ```
-[uint32] seed              ← 4 bytes; used to reconstruct the key
-[uint32] total_size        ← original file size
-for each 1MB block:
-  [uint32] original_block_size
-  [uint32] compressed_block_size
-  [bytes]  compressed data
+Header (22 bytes, little-endian):
+  [u32] magic  "ARNS"
+  [u8 ] version (2)
+  [u8 ] flags  (bit0 seed stored, bit1 priming, bit2 swaps)
+  [u32] rebuild interval
+  [u32] key seed        (0 if not stored)
+  [u64] original size
+For each 1 MB block:
+  [u32] original block size
+  [u32] compressed block size
+  [bytes] compressed data
 ```
+
+Storing the interval and the flags in the header means the decoder always uses
+the exact settings the encoder used — a mismatch can no longer silently corrupt
+the output.
 
 ---
 
@@ -44,45 +79,35 @@ for each 1MB block:
 
 ```
 ANS-Compression/
-├── run_full.py                        ← master pipeline script
+├── run_full.py                     master pipeline (all steps below)
 │
-├── libs/
-│   ├── rygrans/                       ← custom rANS engine (C++)
-│   │   ├── Config.h                   ← constants: PROB_BITS, BLOCK_SIZE, REBUILD_INTERVAL
-│   │   ├── Snapshot.h                 ← model state snapshot struct
-│   │   ├── EncryptionKey.h/.cpp       ← key management (seed / raw bits)
-│   │   ├── AdaptiveModel.h/.cpp       ← adaptive probability model
-│   │   ├── Compressor.h/.cpp          ← two-pass block encoder
-│   │   ├── Decompressor.h/.cpp        ← forward-pass block decoder
-│   │   ├── main.cpp                   ← CLI entry point
-│   │   ├── run_benchmark.py           ← compile + benchmark on corpus
-│   │   ├── test_encryption.py         ← 4-scenario encryption test suite
-│   │   └── generate_graphs.py         ← visualization from test results
-│   │
-│   └── htscodecs/                     ← reference rANS (HTSCodecs)
+├── libs/rygrans/                   the compressor (C++17)
+│   ├── Config.h                    constants and CodecParams
+│   ├── EncryptionKey.{h,cpp}       key from seed or raw bits
+│   ├── AdaptiveModel.{h,cpp}       order-0 model + swaps
+│   ├── Snapshot.h                  model state snapshot
+│   ├── PrimingText.h               public priming text
+│   ├── CodecCommon.h               shared header I/O + gated step
+│   ├── Compressor.{h,cpp}          two-pass block encoder
+│   ├── Decompressor.{h,cpp}        one-pass block decoder
+│   ├── main.cpp                    command line tool
+│   ├── rans_byte.h                 base rANS (ryg, public domain)
+│   ├── run_benchmark.py            build + benchmark on the corpus
+│   ├── test_encryption.py          five-scenario encryption suite
+│   ├── generate_graphs.py          encryption test graphs
+│   └── paper_experiments.py        experiments from paper Section 4
 │
-├── reference/arith/                   ← arithmetic coding baseline
-│   └── compare_algorithms.py          ← benchmark all three engines
+├── reference/arith/                arithmetic coding baseline
+│   ├── reference_arith_simple/     order-0 arithmetic coder (C)
+│   └── compare_algorithms.py       rANS vs. arithmetic comparison
+│
+├── src/final_summary.py            comparison CSVs + graphs
 │
 ├── files/
-│   ├── smallFiles/                    ← Canterbury corpus (small files)
-│   └── 50MFiles/                      ← large file dataset (50MB each)
+│   ├── smallFiles/                 Canterbury corpus
+│   └── 50MFiles/                   large (50 MB) files
 │
-├── src/
-│   └── final_summary.py               ← aggregate results + comparison graphs
-│
-└── results/                           ← auto-generated output
-    ├── ADAPRANS_Results.csv
-    ├── HTSCodecs_Results.csv
-    ├── Final_Comparison_Report.csv
-    ├── comparison_graph_small.png
-    ├── comparison_graph_large.png
-    └── encryption_tests/
-        ├── encryption_results.csv
-        ├── graph1_similarity.png
-        ├── graph2_prefix.png
-        ├── graph3_ratio.png
-        └── graph4_heatmap.png
+└── results/                        generated CSVs and graphs
 ```
 
 ---
@@ -91,84 +116,96 @@ ANS-Compression/
 
 ### Prerequisites
 
-- **C++ compiler:** GCC/G++ with C++17 support (MinGW on Windows, GCC on Linux/macOS)
-- **Python 3.x** with: `pandas`, `matplotlib`, `seaborn`
+- **C/C++ compiler:** GCC/G++ with C++17 (MinGW/TDM-GCC on Windows).
+- **Python 3.x** with `pandas`, `matplotlib`, `numpy`:
+  ```
+  pip install pandas matplotlib numpy
+  ```
 
-Install Python dependencies:
-```bash
-pip install pandas matplotlib seaborn
+### Run the full pipeline
+
 ```
-
-### Run the Full Pipeline
-
-```bash
 python run_full.py
 ```
 
-This single command executes all five steps in order:
+This builds the compressor and runs every step:
 
 | Step | Script | Output |
 |------|--------|--------|
-| 1 | `run_benchmark.py` | `ADAPRANS_Results.csv` |
-| 2 | `compare_algorithms.py` | `Final_Comparison_Report.csv` |
-| 3 | `final_summary.py` | comparison graphs |
-| 4 | `test_encryption.py` | `encryption_results.csv` + restored files |
+| 1 | `run_benchmark.py` | `results/Rygrans_Results.csv` |
+| 2 | `compare_algorithms.py` | `results/Final_Comparison_Report.csv` |
+| 3 | `final_summary.py` | comparison CSVs + graphs |
+| 4 | `test_encryption.py` | `results/encryption_tests/…` |
 | 5 | `generate_graphs.py` | encryption test graphs |
+| 6 | `paper_experiments.py` | `results/paper_experiments/…` |
 
-### Run Individual Steps
+### Use the compressor directly
 
-```bash
-# Benchmark only
-cd libs/rygrans
-python run_benchmark.py
-
-# Encryption tests only
-cd libs/rygrans
-python test_encryption.py
-
-# Compress / decompress manually
-./compressor.exe c input.txt output.rans
-./compressor.exe d output.rans restored.txt
-./compressor.exe d output.rans restored.txt --seed 42
-./compressor.exe d output.rans restored.txt --key 1011001101...
 ```
+# build
+cd libs/rygrans
+g++ -O3 -Wall -Wextra main.cpp EncryptionKey.cpp AdaptiveModel.cpp \
+    Compressor.cpp Decompressor.cpp -o compressor
+
+# compress and decompress
+./compressor c input.txt output.rans
+./compressor d output.rans restored.txt
+
+# explicit key
+./compressor c input.txt output.rans --seed 42
+./compressor d output.rans restored.txt --seed 42
+./compressor c input.txt output.rans --key 10110011...
+
+# real secret-key mode: do not store the seed in the file
+./compressor c input.txt output.rans --seed 42 --no-store-seed
+./compressor d output.rans restored.txt --seed 42
+```
+
+Options: `--seed N`, `--key BITS`, `--flip-bit N`, `--interval N`,
+`--no-prime`, `--no-swaps`, `--no-store-seed`.
+Compression options are recorded in the header; the decoder reads them back.
 
 ---
 
 ## Encryption Test Suite
 
-`test_encryption.py` runs four scenarios on each file in the corpus:
+`test_encryption.py` runs five scenarios per corpus file:
 
-| Scenario | Key Used | Expected Result |
-|----------|----------|-----------------|
-| No key | none (model always updates) | 100% identical |
-| Correct key | seed read from compressed file | 100% identical |
-| Wrong key | different seed | ~0.5% similarity — immediate gibberish |
-| One-bit flip (pos 100) | correct key with bit 100 flipped | correct up to ~byte 100, gibberish after |
-
-### Sample Results
-
-| File | No key | Correct key | Wrong key | One-bit flip |
-|------|--------|-------------|-----------|--------------|
-| alice29.txt | 100% | 100% | 0.49% | 2.80% (102 bytes) |
-| asyoulik.txt | 100% | 100% | 0.56% | 1.54% (103 bytes) |
-| kennedy.xls | 100% | 100% | 0.00% | 0.00% |
-
-The one-bit flip result confirms that the encryption is **sensitive to individual bit errors**: the output is correct up to the point where the key diverges, then immediately becomes unrecoverable.
+| Scenario | What it shows |
+|----------|---------------|
+| Stored seed | file decrypts itself from the header seed → identical |
+| Correct key | correct seed passed explicitly → identical |
+| Wrong key | with priming, garbage from byte 0 |
+| Wrong key, no priming | exposes the first-interval leak priming closes |
+| One-bit flip | one differing key bit → correct up to the flip, garbage after |
 
 ---
 
-## Compression Results
+## Paper Experiments (Section 4)
 
-Benchmarked on the Canterbury corpus. Compression ratio = compressed size / original size (lower is better).
+`paper_experiments.py` reproduces the paper's three measurements for rANS:
 
-| Engine | Type | Avg. Ratio (small files) |
-|--------|------|--------------------------|
-| Rygrans (this project) | Adaptive rANS + encryption | ~57–70% |
-| HTSCodecs | Standard rANS | ~57–70% |
-| Arithmetic Coding | Order-0 adaptive | ~57–70% |
+1. **Compression loss** (Table 1) — random key vs. no key; the loss is a tiny
+   number of bytes.
+2. **Ciphertext uniformity** (Figure 6, Table 4) — the distribution of every
+   *m*-bit substring stays close to `2^-m`; `σ/µ` is reported for `m = 1..8`.
+3. **Key sensitivity** (Figure 7) — the normalized Hamming distance between
+   ciphertexts under different or one-bit-different keys tends to `0.5`.
 
-All three engines achieve comparable compression ratios, confirming that the encryption key mechanism does **not degrade compression performance**.
+---
+
+## Security Notes
+
+This is an academic demonstration of the paper's mechanism, not a production
+cipher. Known limitations:
+
+- Deriving the key from a **32-bit seed** gives only a `2^32` key space. Use
+  `--key` with a long random bit string for a larger space.
+- The key generator is **Mersenne Twister**, which is not cryptographically
+  secure. The paper suggests a generator based on the discrete logarithm
+  (`K ← aK mod P`, Section 3.1) for stronger key evolution.
+- By default the seed is stored in the file header for convenience. Use
+  `--no-store-seed` to keep the key fully external.
 
 ---
 
@@ -176,19 +213,25 @@ All three engines achieve comparable compression ratios, confirming that the enc
 
 | Component | Detail |
 |-----------|--------|
-| Algorithm | Range Asymmetric Numeral Systems (rANS), byte-aligned |
+| Algorithm | byte-aligned rANS |
 | Probability scale | 2^14 = 16,384 |
 | Block size | 1 MB |
-| Table rebuild interval | every 512 symbols |
-| Key length | 1,000 bits (circular) |
-| Key generation | Mersenne Twister (mt19937) seeded with `std::random_device` |
-| Language | C++17 (engine), Python 3.10+ (pipeline) |
-| Base rANS implementation | `rans_byte.h` by Fabian 'ryg' Giesen (public domain) |
+| Default rebuild interval | 512 symbols |
+| Key length (from seed) | 1,000 bits, circular |
+| Key generator | Mersenne Twister (mt19937) |
+| Language | C++17 (engine), Python 3 (pipeline) |
+| Base rANS | `rans_byte.h`, Fabian 'ryg' Giesen (public domain) |
 
 ---
 
 ## Credits
 
-Developed by Computer Science students at Ariel University.  
-Based on the paper: *"Integrated Encryption in Dynamic Arithmetic Compression"*.  
-Base rANS primitives: [ryg/rans](https://github.com/rygorous/ryg_rans) — Fabian Giesen (public domain).
+- rANS primitives: [ryg/rans](https://github.com/rygorous/ryg_rans) —
+  Fabian Giesen (public domain).
+- Arithmetic coding baseline: adapted from Mark Nelson,
+  *The Data Compression Book*.
+- Scheme: S. T. Klein and D. Shapira, *"Integrated Encryption in Dynamic
+  Arithmetic Compression"*, Information and Computation (extended version of
+  the LATA 2017 paper).
+
+Developed by Computer Science students at Ariel University.

@@ -1,0 +1,4 @@
+variant,final normalized Hamming distance
+different key (seed B),0.498371
+first key bit flipped,0.494703
+last key bit flipped,0.496883
