@@ -73,12 +73,16 @@ bool decompress(const string& input_path, const string& output_path,
         }
 
         // With a wrong key the rANS state goes out of sync and may
-        // consume more input bytes than the block really has (up to
-        // 4 per symbol). Padding the buffer with zeros keeps such
-        // reads inside the buffer instead of past its end.
-        size_t safe_size = 4 + (size_t)orig_b * 4;
+        // try to read more bytes than the block really has. We pad
+        // the buffer so those reads stay inside it. The padding byte
+        // is 0xFF, not 0x00: the rANS renormalization loop reads
+        // bytes until the state reaches 2^23, and a run of 0x00 bytes
+        // would never raise it (0<<8 | 0 == 0), looping off the end.
+        // 0xFF guarantees the loop stops within a few reads, so each
+        // symbol consumes at most 4 bytes.
+        size_t safe_size = 8 + (size_t)orig_b * 4;
         if (safe_size < comp_b) safe_size = comp_b;
-        vector<uint8_t> comp_data(safe_size, 0);
+        vector<uint8_t> comp_data(safe_size, 0xFF);
         if (!in.read((char*)comp_data.data(), comp_b)) {
             cerr << "Error: corrupted file (truncated block)\n";
             return false;
