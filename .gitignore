@@ -1,0 +1,23 @@
+# Build artifacts
+*.exe
+*.o
+*.obj
+
+# Compression outputs and temporary artifacts
+*.rans
+*.my_ans
+*.ref_arith
+*.restored
+*.bin
+
+# Restored sample files produced by the encryption test suite
+results/encryption_tests/*/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS files
+.vscode/
+Thumbs.db
+.DS_Store
