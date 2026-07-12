@@ -1,60 +1,60 @@
 label,file,original_size,compressed_size,identical,similarity,match_prefix,status
 Stored seed,alice29.txt,152089,87424,True,100.0,152089,OK
 Correct key,alice29.txt,152089,87424,True,100.0,152089,OK
-Wrong key,alice29.txt,152089,87424,False,5.5198,8,MISMATCH
-"Wrong key, no priming",alice29.txt,152089,87691,False,5.3245,512,MISMATCH
-One-bit flip (pos 200),alice29.txt,152089,87501,False,3.2849,202,MISMATCH
+Wrong key,alice29.txt,152089,87424,False,5.4928,8,MISMATCH
+"Wrong key, no priming",alice29.txt,152089,87691,False,5.4008,512,MISMATCH
+One-bit flip (pos 200),alice29.txt,152089,87501,False,3.2836,202,MISMATCH
 Stored seed,asyoulik.txt,129301,79115,True,100.0,129301,OK
 Correct key,asyoulik.txt,129301,79115,True,100.0,129301,OK
-Wrong key,asyoulik.txt,129301,79115,False,4.6164,1,MISMATCH
-"Wrong key, no priming",asyoulik.txt,129301,79281,False,2.4207,513,MISMATCH
-One-bit flip (pos 200),asyoulik.txt,129301,79140,False,1.6945,202,MISMATCH
+Wrong key,asyoulik.txt,129301,79115,False,4.5885,1,MISMATCH
+"Wrong key, no priming",asyoulik.txt,129301,79281,False,2.4632,513,MISMATCH
+One-bit flip (pos 200),asyoulik.txt,129301,79140,False,1.6643,202,MISMATCH
 Stored seed,cp.html,25248,16991,True,100.0,25248,OK
 Correct key,cp.html,25248,16991,True,100.0,25248,OK
-Wrong key,cp.html,25248,16991,False,2.6972,1,MISMATCH
-"Wrong key, no priming",cp.html,25248,17123,False,4.032,512,MISMATCH
-One-bit flip (pos 200),cp.html,25248,16990,False,1.9922,203,MISMATCH
+Wrong key,cp.html,25248,16991,False,2.6774,1,MISMATCH
+"Wrong key, no priming",cp.html,25248,17123,False,4.0003,512,MISMATCH
+One-bit flip (pos 200),cp.html,25248,16990,False,1.913,203,MISMATCH
 Stored seed,fields.c,11581,7672,True,100.0,11581,OK
 Correct key,fields.c,11581,7672,True,100.0,11581,OK
-Wrong key,fields.c,11581,7672,False,4.162,1,MISMATCH
+Wrong key,fields.c,11581,7672,False,4.1706,1,MISMATCH
 "Wrong key, no priming",fields.c,11581,7778,False,7.0978,513,MISMATCH
-One-bit flip (pos 200),fields.c,11581,7629,False,3.4971,202,MISMATCH
+One-bit flip (pos 200),fields.c,11581,7629,False,3.4194,202,MISMATCH
 Stored seed,grammar.lsp,3815,2511,True,100.0,3815,OK
 Correct key,grammar.lsp,3815,2511,True,100.0,3815,OK
-Wrong key,grammar.lsp,3815,2511,False,5.7143,0,MISMATCH
-"Wrong key, no priming",grammar.lsp,3815,2639,False,17.2215,512,MISMATCH
+Wrong key,grammar.lsp,3815,2511,False,5.7929,0,MISMATCH
+"Wrong key, no priming",grammar.lsp,3815,2639,False,17.3001,512,MISMATCH
 One-bit flip (pos 200),grammar.lsp,3815,2486,False,7.4443,203,MISMATCH
 Stored seed,kennedy.xls,1029744,462812,True,100.0,1029744,OK
 Correct key,kennedy.xls,1029744,462812,True,100.0,1029744,OK
-Wrong key,kennedy.xls,1029744,462812,False,0.254,8,MISMATCH
-"Wrong key, no priming",kennedy.xls,1029744,462140,False,8.4106,512,MISMATCH
+Wrong key,kennedy.xls,1029744,462812,False,0.2484,8,MISMATCH
+"Wrong key, no priming",kennedy.xls,1029744,462140,False,8.5209,512,MISMATCH
 Stored seed,lcet10.txt,426754,250395,True,100.0,426754,OK
 Correct key,lcet10.txt,426754,250395,True,100.0,426754,OK
-Wrong key,lcet10.txt,426754,250395,False,4.9933,4,MISMATCH
-"Wrong key, no priming",lcet10.txt,426754,250681,False,5.2508,513,MISMATCH
-One-bit flip (pos 200),lcet10.txt,426754,250296,False,2.9244,204,MISMATCH
+Wrong key,lcet10.txt,426754,250395,False,4.9884,4,MISMATCH
+"Wrong key, no priming",lcet10.txt,426754,250681,False,5.2363,513,MISMATCH
+One-bit flip (pos 200),lcet10.txt,426754,250296,False,2.997,204,MISMATCH
 Stored seed,plrabn12.txt,481861,274188,True,100.0,481861,OK
 Correct key,plrabn12.txt,481861,274188,True,100.0,481861,OK
-Wrong key,plrabn12.txt,481861,274188,False,4.9975,2,MISMATCH
-"Wrong key, no priming",plrabn12.txt,481861,274430,False,4.3089,513,MISMATCH
-One-bit flip (pos 200),plrabn12.txt,481861,274270,False,2.8357,202,MISMATCH
+Wrong key,plrabn12.txt,481861,274188,False,5.0363,2,MISMATCH
+"Wrong key, no priming",plrabn12.txt,481861,274430,False,4.3239,513,MISMATCH
+One-bit flip (pos 200),plrabn12.txt,481861,274270,False,2.9071,202,MISMATCH
 Stored seed,ptt5,513216,80390,True,100.0,513216,OK
 Correct key,ptt5,513216,80390,True,100.0,513216,OK
-Wrong key,ptt5,513216,80390,False,20.8107,512,MISMATCH
-"Wrong key, no priming",ptt5,513216,79433,False,40.4621,517,MISMATCH
-One-bit flip (pos 200),ptt5,513216,78881,False,33.0114,208,MISMATCH
+Wrong key,ptt5,513216,80390,False,20.7944,512,MISMATCH
+"Wrong key, no priming",ptt5,513216,79433,False,40.0455,517,MISMATCH
+One-bit flip (pos 200),ptt5,513216,78881,False,27.0465,208,MISMATCH
 Stored seed,sum,38240,26524,True,100.0,38240,OK
 Correct key,sum,38240,26524,True,100.0,38240,OK
-Wrong key,sum,38240,26524,False,1.2866,0,MISMATCH
+Wrong key,sum,38240,26524,False,1.2997,0,MISMATCH
 "Wrong key, no priming",sum,38240,26419,False,14.2547,513,MISMATCH
-One-bit flip (pos 200),sum,38240,25771,False,7.4215,202,MISMATCH
+One-bit flip (pos 200),sum,38240,25771,False,7.2725,202,MISMATCH
 Stored seed,test_dynamic.txt,200000,27168,True,100.0,200000,OK
 Correct key,test_dynamic.txt,200000,27168,True,100.0,200000,OK
-Wrong key,test_dynamic.txt,200000,27168,False,1.994,0,MISMATCH
-"Wrong key, no priming",test_dynamic.txt,200000,26567,False,23.646,515,MISMATCH
-One-bit flip (pos 200),test_dynamic.txt,200000,25727,False,15.7025,209,MISMATCH
+Wrong key,test_dynamic.txt,200000,27168,False,1.654,0,MISMATCH
+"Wrong key, no priming",test_dynamic.txt,200000,26567,False,23.2825,515,MISMATCH
+One-bit flip (pos 200),test_dynamic.txt,200000,25727,False,15.5525,209,MISMATCH
 Stored seed,xargs.1,4339,2928,True,100.0,4339,OK
 Correct key,xargs.1,4339,2928,True,100.0,4339,OK
-Wrong key,xargs.1,4339,2928,False,4.2406,0,MISMATCH
-"Wrong key, no priming",xargs.1,4339,3098,False,13.4132,513,MISMATCH
+Wrong key,xargs.1,4339,2928,False,4.2637,0,MISMATCH
+"Wrong key, no priming",xargs.1,4339,3098,False,13.3441,513,MISMATCH
 One-bit flip (pos 200),xargs.1,4339,2952,False,6.2457,202,MISMATCH
