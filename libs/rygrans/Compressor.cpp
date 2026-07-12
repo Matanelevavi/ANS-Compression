@@ -3,98 +3,113 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <cstring>
+#include <algorithm>
 
-#include "platform.h"
 #include "rans_byte.h"
-#include "Config.h"
 #include "Snapshot.h"
 #include "AdaptiveModel.h"
-#include "EncryptionKey.h"
+#include "CodecCommon.h"
 
 using namespace std;
-extern uint32_t REBUILD_INTERVAL;
 
+// Compress one block of N bytes.
+//
+// Pass 1 (forward): walk over the data, apply the key-gated model
+// transitions, and save a snapshot of the model at the start of
+// every rebuild interval.
+//
+// Pass 2 (backward): rANS encodes last-symbol-first, so we walk the
+// intervals in reverse. For each interval we rebuild its encoder
+// table from the snapshot (one table at a time, so memory stays
+// small) and encode the interval's symbols in reverse order.
+//
+// The model and the key are shared across blocks: they carry their
+// state from one block to the next, exactly like the decoder does.
 static vector<uint8_t> compress_block(const uint8_t* data, size_t N,
-                                       EncryptionKey& enc_key) {
-    enc_key.index = 0;
+                                      AdaptiveModel& model,
+                                      EncryptionKey& enc_key,
+                                      const CodecParams& params) {
+    const size_t R = params.rebuild_interval;
+    const size_t num_intervals = (N + R - 1) / R;
 
-    size_t num_intervals = (N + REBUILD_INTERVAL - 1) / REBUILD_INTERVAL;
-
+    // Pass 1: forward scan with snapshots.
     vector<ModelSnapshot> snaps(num_intervals);
-    AdaptiveModel model;
-    model.init();
-
     for (size_t i = 0; i < N; i++) {
-        if (i % REBUILD_INTERVAL == 0) {
-            size_t idx = i / REBUILD_INTERVAL;
-            memcpy(snaps[idx].freqs, model.freqs, sizeof(model.freqs));
-            snaps[idx].total     = model.total;
-            snaps[idx].key_index = enc_key.index;
-        }
-        if (enc_key.get_next_bit())
-            model.update(data[i]);
+        if (i % R == 0)
+            model.save(snaps[i / R]);
+        gated_step(model, enc_key, data[i], params.swaps);
     }
 
-    vector<vector<RansEncSymbol>> tables(num_intervals,
-                                         vector<RansEncSymbol>(256));
-    for (size_t idx = 0; idx < num_intervals; idx++) {
-        AdaptiveModel m;
-        memcpy(m.freqs, snaps[idx].freqs, sizeof(m.freqs));
-        m.total = snaps[idx].total;
-        m.buildEncTable(tables[idx].data());
-    }
-
+    // Pass 2: backward rANS encoding, one interval table at a time.
     RansState rans;
     RansEncInit(&rans);
     vector<uint8_t> out_buf(N * 2 + 1024);
     uint8_t* ptr = out_buf.data() + out_buf.size();
 
-    for (size_t i = N; i > 0; i--) {
-        size_t pos      = i - 1;
-        size_t interval = pos / REBUILD_INTERVAL;
-        RansEncPutSymbol(&rans, &ptr, &tables[interval][data[pos]]);
+    AdaptiveModel snap_model;
+    RansEncSymbol esyms[256];
+    for (size_t idx = num_intervals; idx > 0; idx--) {
+        const size_t interval = idx - 1;
+        snap_model.load(snaps[interval]);
+        snap_model.buildEncTable(esyms);
+
+        const size_t lo = interval * R;
+        const size_t hi = min(N, lo + R);
+        for (size_t i = hi; i > lo; i--)
+            RansEncPutSymbol(&rans, &ptr, &esyms[data[i - 1]]);
     }
 
     RansEncFlush(&rans, &ptr);
 
-    size_t comp_size = (out_buf.data() + out_buf.size()) - ptr;
+    const size_t comp_size = (out_buf.data() + out_buf.size()) - ptr;
     return vector<uint8_t>(ptr, ptr + comp_size);
 }
 
-// File format:
-//   [uint32] seed          (0 if key was provided directly via --key)
-//   [uint32] total_original_size
-//   for each block:
-//     [uint32] original_block_size
-//     [uint32] compressed_block_size
-//     [bytes]  compressed_block_data
-void compress(const string& input_path, const string& output_path,
-              EncryptionKey& enc_key) {
+bool compress(const string& input_path, const string& output_path,
+              EncryptionKey& enc_key, const CodecParams& params) {
     ifstream in(input_path, ios::binary);
-    if (!in) { cerr << "Error opening input file\n"; return; }
+    if (!in) {
+        cerr << "Error: cannot open input file: " << input_path << "\n";
+        return false;
+    }
 
     ofstream out(output_path, ios::binary);
-    if (!out) { cerr << "Error creating output file\n"; return; }
+    if (!out) {
+        cerr << "Error: cannot create output file: " << output_path << "\n";
+        return false;
+    }
 
     in.seekg(0, ios::end);
-    uint32_t total_orig = (uint32_t)in.tellg();
+    uint64_t total_orig = (uint64_t)in.tellg();
     in.seekg(0, ios::beg);
 
-    // Write seed (0 means key was injected directly — decompressor must
-    // also receive the key directly in that case)
-    out.write((char*)&enc_key.seed, sizeof(enc_key.seed));
-    out.write((char*)&total_orig,   sizeof(total_orig));
+    FileHeader header;
+    header.rebuild_interval = params.rebuild_interval;
+    header.original_size    = total_orig;
+    if (params.priming) header.flags |= FLAG_PRIMING;
+    if (params.swaps)   header.flags |= FLAG_SWAPS;
+    if (params.store_seed && enc_key.seed != 0) {
+        header.flags |= FLAG_SEED_STORED;
+        header.seed = enc_key.seed;
+    }
+    write_header(out, header);
+
+    // The model and key state run continuously over the whole file.
+    AdaptiveModel model;
+    model.init();
+    if (params.priming)
+        prime_model(model, enc_key, params.swaps);
 
     vector<uint8_t> buffer(BLOCK_SIZE);
-    size_t total_comp = sizeof(enc_key.seed) + sizeof(total_orig);
+    uint64_t total_comp = HEADER_SIZE;
 
     while (in) {
         in.read((char*)buffer.data(), BLOCK_SIZE);
-        size_t bytes_read = in.gcount();
+        size_t bytes_read = (size_t)in.gcount();
         if (bytes_read == 0) break;
 
-        vector<uint8_t> comp = compress_block(buffer.data(), bytes_read, enc_key);
+        vector<uint8_t> comp = compress_block(buffer.data(), bytes_read,
+                                              model, enc_key, params);
 
         uint32_t ob = (uint32_t)bytes_read;
         uint32_t cb = (uint32_t)comp.size();
@@ -104,5 +119,11 @@ void compress(const string& input_path, const string& output_path,
         total_comp += sizeof(ob) + sizeof(cb) + comp.size();
     }
 
+    if (!out) {
+        cerr << "Error: failed writing output file (disk full?)\n";
+        return false;
+    }
+
     cout << "Compressed: " << total_orig << " -> " << total_comp << " bytes\n";
+    return true;
 }
