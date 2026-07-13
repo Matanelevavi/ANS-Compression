@@ -34,8 +34,13 @@ Before the real data, the model is warmed up on a fixed, publicly known text
 (the opening of *Moby-Dick*). The priming updates are themselves gated by the
 secret key, so the model state when the real data begins is already secret.
 This closes an attack on the known initial model: without priming, the first
-rebuild interval of every block decodes correctly under *any* key. The
-`generate_graphs.py` output visualizes this leak (priming on vs. off).
+rebuild interval of every block decodes correctly under *any* key.
+
+<p align="center">
+  <img src="results/encryption_tests/graph3_leak_comparison.png" width="640" alt="Plaintext leak under a wrong key, with priming on vs. off, per file">
+</p>
+
+<p align="center"><em>Bytes of plaintext an attacker recovers under a wrong key, with priming off (leaks one full rebuild interval) vs. on (leaks almost nothing).</em></p>
 
 ### Two-pass compression
 
@@ -193,6 +198,27 @@ Compression options are recorded in the header; the decoder reads them back.
 
 ---
 
+## Compression Results
+
+`compare_algorithms.py` benchmarks Rygrans against an order-0 adaptive
+arithmetic coder on the Canterbury corpus and on 50 MB files from the
+Pizza&Chili Corpus. The two engines land within a percent or two of each
+other on every file — the key-gating and priming/swap overhead does not
+cost meaningful compression.
+
+<p align="center">
+  <img src="results/comparison_graph_small.png" width="800" alt="Compression ratio comparison, small files">
+</p>
+
+<p align="center">
+  <img src="results/comparison_graph_large.png" width="800" alt="Compression ratio comparison, 50MB files">
+</p>
+
+Full numbers: [`results/Comparison_Small.csv`](results/Comparison_Small.csv),
+[`results/Comparison_Large.csv`](results/Comparison_Large.csv).
+
+---
+
 ## Encryption Test Suite
 
 `test_encryption.py` runs five scenarios per corpus file:
@@ -204,6 +230,12 @@ Compression options are recorded in the header; the decoder reads them back.
 | Wrong key | with priming, garbage from byte 0 |
 | Wrong key, no priming | exposes the first-interval leak priming closes |
 | One-bit flip | one differing key bit → correct up to the flip, garbage after |
+
+<p align="center">
+  <img src="results/encryption_tests/graph1_similarity.png" width="600" alt="Average similarity to the original file per scenario">
+</p>
+
+<p align="center"><em>Average similarity to the original file, per scenario, across the whole corpus. More graphs (failure distance, per-file heatmap) are in <code>results/encryption_tests/</code>.</em></p>
 
 ---
 
@@ -217,6 +249,14 @@ Compression options are recorded in the header; the decoder reads them back.
    *m*-bit substring stays close to `2^-m`; `σ/µ` is reported for `m = 1..8`.
 3. **Key sensitivity** (Figure 7) — the normalized Hamming distance between
    ciphertexts under different or one-bit-different keys tends to `0.5`.
+
+<p align="center">
+  <img src="results/paper_experiments/figure6_uniformity_8bit.png" width="640" alt="Distribution of 8-bit substrings in the compressed stream">
+  <br>
+  <img src="results/paper_experiments/figure7_hamming_distance.png" width="640" alt="Normalized Hamming distance between ciphertexts under different keys">
+</p>
+
+<p align="center"><em>Top: ciphertext bytes look uniformly random (paper Figure 6). Bottom: ciphertexts under different keys diverge toward a normalized Hamming distance of 0.5 (paper Figure 7).</em></p>
 
 ---
 
