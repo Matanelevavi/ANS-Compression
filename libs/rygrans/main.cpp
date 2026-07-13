@@ -38,8 +38,11 @@ static void print_usage() {
         "  --no-store-seed do not store the key seed in the output file\n"
         "\n"
         "When compressing without --seed/--key, a random seed is chosen.\n"
-        "When decompressing without --seed/--key, the seed stored in the\n"
-        "file is used (if present).\n";
+        "By default that seed is stored in the file header, so the file\n"
+        "decrypts itself with no key needed on the command line. That is a\n"
+        "convenience for testing, NOT real secrecy: anyone with the file\n"
+        "can decompress it. For an actual secret key, compress with\n"
+        "--no-store-seed and share the key (--seed or --key) separately.\n";
 }
 
 // Parse a decimal string into uint32_t. Throws on bad input.

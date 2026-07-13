@@ -17,6 +17,12 @@ results/encryption_tests/*/
 __pycache__/
 *.pyc
 
+# Large corpus files (~300MB total). Not yet removed from tracking -
+# see files/50MFiles/download_corpus.py. This pattern only takes
+# effect once the files are untracked (git rm --cached), planned for
+# just before the first push.
+# files/50MFiles/*.50MB
+
 # Editor / OS files
 .vscode/
 Thumbs.db

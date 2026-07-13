@@ -105,7 +105,7 @@ ANS-Compression/
 │
 ├── files/
 │   ├── smallFiles/                 Canterbury corpus
-│   └── 50MFiles/                   large (50 MB) files
+│   └── 50MFiles/                   large (50 MB) files + download_corpus.py
 │
 └── results/                        generated CSVs and graphs
 ```
@@ -121,6 +121,19 @@ ANS-Compression/
   ```
   pip install pandas matplotlib numpy
   ```
+
+### The 50 MB dataset
+
+`files/50MFiles/` holds six standard research files from the
+[Pizza&Chili Corpus](http://pizzachili.dcc.uchile.cl) (dna, english,
+proteins, sources, pitches, dblp.xml), truncated to 50 MB each. They are
+currently included in this checkout. If they are ever missing (a fresh
+clone that stopped tracking them, or a partial checkout), regenerate them
+with:
+
+```
+python files/50MFiles/download_corpus.py
+```
 
 ### Run the full pipeline
 
@@ -146,19 +159,32 @@ This builds the compressor and runs every step:
 cd libs/rygrans
 g++ -O3 -Wall -Wextra main.cpp EncryptionKey.cpp AdaptiveModel.cpp \
     Compressor.cpp Decompressor.cpp -o compressor
+```
 
-# compress and decompress
+**Real secret-key mode** — the key is never written to the file; both sides
+must already share it, exactly like the paper's threat model:
+
+```
+./compressor c input.txt output.rans --seed 42 --no-store-seed
+./compressor d output.rans restored.txt --seed 42
+```
+
+**Convenience mode (default)** — no key given, so a random seed is chosen
+and stored in the file header. The file decrypts itself with no key on the
+command line. This is meant for quick testing and benchmarking, not for
+demonstrating real secrecy:
+
+```
 ./compressor c input.txt output.rans
 ./compressor d output.rans restored.txt
+```
 
-# explicit key
+Any key can also be given explicitly, with or without storing it:
+
+```
 ./compressor c input.txt output.rans --seed 42
 ./compressor d output.rans restored.txt --seed 42
 ./compressor c input.txt output.rans --key 10110011...
-
-# real secret-key mode: do not store the seed in the file
-./compressor c input.txt output.rans --seed 42 --no-store-seed
-./compressor d output.rans restored.txt --seed 42
 ```
 
 Options: `--seed N`, `--key BITS`, `--flip-bit N`, `--interval N`,
