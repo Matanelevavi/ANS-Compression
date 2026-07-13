@@ -73,6 +73,8 @@ def run_dataset(dataset_path, dataset_name, writer, temp_dir):
         file_path = os.path.join(dataset_path, filename)
         if not os.path.isfile(file_path) or filename.startswith("."):
             continue
+        if filename.endswith(".py"):
+            continue  # tooling script (e.g. download_corpus.py), not corpus data
 
         original_size = os.path.getsize(file_path)
         comp_path     = os.path.join(temp_dir, filename + ".rans")

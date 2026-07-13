@@ -63,7 +63,8 @@ def process_dataset(dataset_name, files_dir, results, temp_dir):
         return
 
     files = sorted(f for f in os.listdir(files_dir)
-                   if os.path.isfile(os.path.join(files_dir, f)))
+                   if os.path.isfile(os.path.join(files_dir, f))
+                   and not f.endswith(".py"))  # skip tooling scripts, e.g. download_corpus.py
 
     print(f"\n=== Dataset: {dataset_name} ===")
     print(f"{'Filename':<20} | {'Orig (B)':<12} | {'Rygrans %':<10} | {'Arith %':<10}")

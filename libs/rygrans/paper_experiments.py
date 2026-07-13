@@ -98,7 +98,7 @@ def experiment_compression_loss(temp_dir):
             continue
         for filename in sorted(os.listdir(dataset_dir)):
             path = os.path.join(dataset_dir, filename)
-            if not os.path.isfile(path):
+            if not os.path.isfile(path) or filename.endswith(".py"):
                 continue
 
             out_nokey = os.path.join(temp_dir, "nokey.rans")
