@@ -6,9 +6,10 @@ Runs all project steps in order:
   1. run_benchmark.py       build the compressor + benchmark it
   2. compare_algorithms.py  compare against the arithmetic baseline
   3. final_summary.py       comparison CSVs and graphs
-  4. test_encryption.py     the five encryption scenarios
-  5. generate_graphs.py     encryption test graphs
-  6. paper_experiments.py   experiments from the paper (Section 4)
+  4. size_overhead.py       demo-key vs. secret-key size comparison
+  5. test_encryption.py     the five encryption scenarios
+  6. generate_graphs.py     encryption test graphs
+  7. paper_experiments.py   experiments from the paper (Section 4)
 
 Any failing step stops the pipeline with a non-zero exit code.
 """
@@ -27,6 +28,8 @@ STEPS = [
      os.path.join(ROOT_DIR, "reference", "arith", "compare_algorithms.py"), ROOT_DIR),
     ("Summary graphs",
      os.path.join(ROOT_DIR, "src", "final_summary.py"), ROOT_DIR),
+    ("Size overhead comparison",
+     os.path.join(RYGRANS_DIR, "size_overhead.py"), RYGRANS_DIR),
     ("Encryption tests",
      os.path.join(RYGRANS_DIR, "test_encryption.py"), RYGRANS_DIR),
     ("Encryption graphs",

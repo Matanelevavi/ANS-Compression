@@ -98,6 +98,7 @@ ANS-Compression/
 │   ├── main.cpp                    command line tool
 │   ├── rans_byte.h                 base rANS (ryg, public domain)
 │   ├── run_benchmark.py            build + benchmark on the corpus
+│   ├── size_overhead.py            demo-key vs. secret-key size comparison
 │   ├── test_encryption.py          five-scenario encryption suite
 │   ├── generate_graphs.py          encryption test graphs
 │   └── paper_experiments.py        experiments from paper Section 4
@@ -153,9 +154,10 @@ This builds the compressor and runs every step:
 | 1 | `run_benchmark.py` | `results/Rygrans_Results.csv` |
 | 2 | `compare_algorithms.py` | `results/Final_Comparison_Report.csv` |
 | 3 | `final_summary.py` | comparison CSVs + graphs |
-| 4 | `test_encryption.py` | `results/encryption_tests/…` |
-| 5 | `generate_graphs.py` | encryption test graphs |
-| 6 | `paper_experiments.py` | `results/paper_experiments/…` |
+| 4 | `size_overhead.py` | `results/Size_Overhead.csv` + graphs |
+| 5 | `test_encryption.py` | `results/encryption_tests/…` |
+| 6 | `generate_graphs.py` | encryption test graphs |
+| 7 | `paper_experiments.py` | `results/paper_experiments/…` |
 
 ### Use the compressor directly
 
@@ -216,6 +218,22 @@ cost meaningful compression.
 
 Full numbers: [`results/Comparison_Small.csv`](results/Comparison_Small.csv),
 [`results/Comparison_Large.csv`](results/Comparison_Large.csv).
+
+`size_overhead.py` compresses every file twice with the same key: once with
+the seed stored in the header (demo mode) and once with `--no-store-seed`
+(secret-key mode). The two outputs are byte-for-byte identical on every
+file — encryption here costs zero extra bytes, because the key steers the
+adaptive model itself instead of being a cipher layered on top afterwards.
+
+<p align="center">
+  <img src="results/size_overhead_small.png" width="800" alt="Original vs. compressed vs. compressed+encrypted size, small files">
+</p>
+
+<p align="center">
+  <img src="results/size_overhead_large.png" width="800" alt="Original vs. compressed vs. compressed+encrypted size, 50MB files">
+</p>
+
+Full numbers: [`results/Size_Overhead.csv`](results/Size_Overhead.csv).
 
 ---
 

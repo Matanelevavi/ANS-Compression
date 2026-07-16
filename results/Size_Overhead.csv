@@ -1,0 +1,19 @@
+Dataset,File Name,Original Size (B),ANS Compressed Size (B),ANS Compressed + Secret Key Size (B)
+smallFiles,alice29.txt,152089,87424,87424
+smallFiles,asyoulik.txt,129301,79115,79115
+smallFiles,cp.html,25248,16991,16991
+smallFiles,fields.c,11581,7672,7672
+smallFiles,grammar.lsp,3815,2511,2511
+smallFiles,kennedy.xls,1029744,462812,462812
+smallFiles,lcet10.txt,426754,250395,250395
+smallFiles,plrabn12.txt,481861,274188,274188
+smallFiles,ptt5,513216,80390,80390
+smallFiles,sum,38240,26524,26524
+smallFiles,test_dynamic.txt,200000,27168,27168
+smallFiles,xargs.1,4339,2928,2928
+50MFiles,dblp.xml.50MB,53882283,35586605,35586605
+50MFiles,dna.50MB,52429136,13141397,13141397
+50MFiles,english.50MB,52428800,29773237,29773237
+50MFiles,pitches.50MB,52428800,37024495,37024495
+50MFiles,proteins.50MB,52615713,27859893,27859893
+50MFiles,sources.50MB,54192109,37784334,37784334
