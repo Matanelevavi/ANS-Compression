@@ -194,6 +194,7 @@ def experiment_uniformity(temp_dir):
     ax.set_xlabel("8-bit value")
     ax.set_ylabel("Probability of occurrence")
     ax.set_title("Distribution of 8-bit Substrings in the Compressed Stream")
+    ax.set_ylim(0, 2 / 256)  # symmetric around the uniform line, centered
     ax.legend()
     ax.grid(alpha=0.3)
     fig.savefig(os.path.join(OUT_DIR, "figure6_uniformity_8bit.png"),
